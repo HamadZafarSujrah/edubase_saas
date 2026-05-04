@@ -20,6 +20,7 @@ class Student extends Model
         'campus_id',
         'school_class_id',
         'section_id',
+        'system_id',
         'admission_no',
         'roll_no',
         'cnic_no',
@@ -61,6 +62,7 @@ class Student extends Model
         'board_reg_no', 'board_roll_no', 'board_total_marks', 'board_obtained_marks',
         'house', 'class_of_admission', 'attachments',
         'send_branded_sms', 'send_whatsapp_sms', 'send_app_notification',
+        'fee_plan_effect_from', 'fee_plan_increment', 'fee_plan_year', 'fee_plan_discount_type', 'fee_plan_notes'
     ];
 
     protected $casts = [
@@ -73,10 +75,13 @@ class Student extends Model
     ];
 
     public function session() { return $this->belongsTo(Session::class); }
+    public function academicSession() { return $this->belongsTo(Session::class, 'session_id'); }
     public function campus() { return $this->belongsTo(Campus::class); }
     public function schoolClass() { return $this->belongsTo(SchoolClass::class, 'school_class_id'); }
     public function section() { return $this->belongsTo(Section::class); }
     public function feePlan() { return $this->belongsTo(\App\Models\Finance\FeePlan::class); }
+    public function feePlanItems() { return $this->hasMany(\App\Models\Finance\StudentFeePlanItem::class); }
+    public function challans() { return $this->hasMany(\App\Models\Finance\Challan::class); }
     
     public function getFullNameAttribute()
     {

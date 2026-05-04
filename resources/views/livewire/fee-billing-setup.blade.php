@@ -65,10 +65,11 @@
             </div>
         </div>
     </div>
-</div>
 
 <style>
     .form-check-input:checked { background-color: #0d6efd; border-color: #0d6efd; }
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 </style>
+</div>
+

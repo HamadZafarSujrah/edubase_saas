@@ -2,42 +2,31 @@
 
 namespace App\Models\Traits;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use App\Models\Tenant\Tenant;
+use App\Scopes\TenantScope;
+use Illuminate\Support\Facades\Session;
 
 trait HasTenant
 {
     /**
-     * Boot the trait and automatically apply the global scope.
+     * The table associated with the tenant.
+     * All multi-tenant models must have a tenant_id column.
      */
-    protected static function bootHasTenant()
+    protected static function booted()
     {
-        // Add global scope to automatically filter by the current tenant
-        static::addGlobalScope('tenant', function (Builder $builder) {
-            $tenantId = session('tenant_id') ?? request()->header('X-Tenant-ID') ?? config('tenant.current_id') ?? 1; // Fallback to 1 for dev
-            
-            if ($tenantId) {
-                $builder->where('tenant_id', $tenantId);
-            }
-        });
+        static::addGlobalScope(new TenantScope);
 
-        // Automatically assign the current tenant_id when creating new records
-        static::creating(function (Model $model) {
-            if (!$model->tenant_id) {
-                $tenantId = session('tenant_id') ?? request()->header('X-Tenant-ID') ?? config('tenant.current_id') ?? 1; // Fallback to 1 for dev
-                if ($tenantId) {
-                    $model->tenant_id = $tenantId;
-                }
+        static::creating(function ($model) {
+            if (Session::has('tenant_id')) {
+                $model->tenant_id = Session::get('tenant_id');
             }
         });
     }
 
     /**
-     * Define the relationship to the Tenant model.
+     * Get the tenant that owns this model.
      */
     public function tenant()
     {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
+        return $this->belongsTo(\App\Models\Tenant::class);
     }
 }

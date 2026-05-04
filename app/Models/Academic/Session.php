@@ -20,7 +20,41 @@ class Session extends Model
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date' => 'date',
-        'is_active' => 'boolean',
+        'end_date'   => 'date',
+        'is_active'  => 'boolean',
     ];
+
+    // ─────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────
+
+    /**
+     * All students enrolled in this session.
+     */
+    public function students()
+    {
+        return $this->hasMany(\App\Models\Student\Student::class);
+    }
+
+    // ─────────────────────────────────────────────
+    // SCOPES
+    // ─────────────────────────────────────────────
+
+    /**
+     * Only active sessions.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * The currently running session (active + within date range).
+     */
+    public function scopeCurrent($query)
+    {
+        return $query->where('is_active', true)
+                     ->where('start_date', '<=', now())
+                     ->where('end_date', '>=', now());
+    }
 }

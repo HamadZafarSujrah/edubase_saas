@@ -115,7 +115,7 @@
                 <!-- Left Side: Management Modules -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-home me-1"></i> Home</a>
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active bg-danger' : '' }}" href="/dashboard"><i class="fas fa-home me-1"></i> Dashboard</a>
                     </li>
 
                     <!-- ADMISSIONS -->
@@ -126,8 +126,8 @@
                         <ul class="dropdown-menu shadow-lg">
                             <li><a class="dropdown-item" href="/student-admission"><i class="fas fa-handshake"></i> New Admission</a></li>
                             <li><a class="dropdown-item" href="/manage-students"><i class="fas fa-users-cog"></i> Manage Students</a></li>
-                            <li><a class="dropdown-item" href="/fee-plans"><i class="fas fa-file-invoice-dollar text-primary"></i> Create Fee Plans</a></li>
-                            <li><a class="dropdown-item" href="/manage-students"><i class="fas fa-edit text-warning"></i> View/Edit Student Fee Plans</a></li>
+                            <li><a class="dropdown-item" href="/create-fee-plans"><i class="fas fa-file-invoice-dollar text-primary"></i> Create Fee Plans</a></li>
+                            <li><a class="dropdown-item" href="/view-edit-fee-plans"><i class="fas fa-edit text-warning"></i> View/Edit Student Fee Plans</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/generate-challans"><i class="fas fa-cog"></i> Generate Challan</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Generate Challan Installment Wise</a></li>
@@ -137,7 +137,7 @@
                             <li><a class="dropdown-item" href="#"><i class="fas fa-money-bill-wave"></i> Direct Payment</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-users"></i> Familywise Payment</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-balance-scale"></i> Paid Challans</a></li>
+                            <li><a class="dropdown-item" href="/paid-challans"><i class="fas fa-check-circle"></i> Paid Challans</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-minus"></i> Challan Discounts</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-history"></i> Payment History</a></li>
@@ -175,18 +175,20 @@
                             <i class="fas fa-file-invoice me-1 text-warning"></i> Finance
                         </a>
                         <ul class="dropdown-menu shadow-lg">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-check"></i> Accounting Periods</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-project-diagram"></i> GL Groups</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-list-ol"></i> GL Accounts</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-stream"></i> Chart of Accounts</a></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-tools me-2"></i>Setup & Configuration</h6></li>
+                            <li><a class="dropdown-item" href="/chart-of-accounts"><i class="fas fa-stream text-primary"></i> Chart of Accounts</a></li>
+                            <li><a class="dropdown-item" href="/accounting-periods"><i class="fas fa-calendar-check text-primary"></i> Accounting Periods</a></li>
+                            <li><a class="dropdown-item" href="/gl-groups"><i class="fas fa-project-diagram text-primary"></i> GL Groups</a></li>
+                            <li><a class="dropdown-item" href="/gl-accounts"><i class="fas fa-list-ol text-primary"></i> GL Accounts</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-dollar-sign"></i> Journal Entry</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cut"></i> Add Expense</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-hand-holding-usd"></i> Add Other Income</a></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-pencil-alt me-2"></i>Daily Transactions</h6></li>
+                            <li><a class="dropdown-item" href="/journal-entry"><i class="fas fa-dollar-sign text-success"></i> Journal Entry</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cut text-danger"></i> Add Expense</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-hand-holding-usd text-success"></i> Add Other Income</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-search-dollar"></i> Journal Inquiry</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-th"></i> GL Inquiry</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-columns"></i> General Ledger</a></li>
+                            <li><a class="dropdown-item" href="/general-ledger"><i class="fas fa-columns"></i> General Ledger</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-exchange-alt"></i> Trial Balance</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-balance-scale"></i> P & L Statement</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-chess-knight"></i> Balance Sheet</a></li>
@@ -258,6 +260,18 @@
                             <i class="fas fa-cog me-1 text-warning"></i> Core
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+                            @if(auth()->check() && auth()->user()->role == 'Developer')
+                                <li><h6 class="dropdown-header text-uppercase text-danger">Tenant Switcher</h6></li>
+                                @foreach(\App\Models\Tenant::all() as $t)
+                                    <li>
+                                        <button class="dropdown-item d-flex justify-content-between align-items-center" onclick="window.location.href='/switch-tenant/{{ $t->id }}'">
+                                            <span><i class="fas fa-building text-danger"></i> {{ $t->name }}</span>
+                                            @if(session('tenant_id') == $t->id) <i class="fas fa-check-circle text-success"></i> @endif
+                                        </button>
+                                    </li>
+                                @endforeach
+                                <li><hr class="dropdown-divider"></li>
+                            @endif
                             <li><h6 class="dropdown-header text-uppercase text-muted">Organization</h6></li>
                             <li><a class="dropdown-item" href="/campuses"><i class="fas fa-building text-primary"></i> Campus</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-city text-primary"></i> City</a></li>
@@ -282,9 +296,59 @@
                             <li><a class="dropdown-item" href="#"><i class="fas fa-star text-info"></i> Student Attendance Fine</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-user-circle fs-5"></i></a>
+
+                    <!-- ADMIN Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-shield me-1 text-warning"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+                            <li><h6 class="dropdown-header text-uppercase text-muted">System Security</h6></li>
+                            <li><a class="dropdown-item" href="/users-and-permissions"><i class="fas fa-users-cog text-primary"></i> Users & Permissions</a></li>
+                            <li><a class="dropdown-item" href="{{ route('roles.manage') }}"><i class="fas fa-shield-alt text-primary"></i> Manage Roles & Permissions</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-history text-primary"></i> User Logging</a></li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-uppercase text-muted">Services</h6></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-broadcast-tower text-info"></i> SMS Gateway Settings</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-envelope-open-text text-info"></i> WhatsApp Service</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-certificate text-info"></i> Manage Certificates</a></li>
+
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-uppercase text-muted">Attendance Tech</h6></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-map-marker-alt text-success"></i> Geo Location Attendance</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-qrcode text-success"></i> QR Biometric Attendance</a></li>
+                        </ul>
                     </li>
+
+                    @auth
+                    <!-- User Profile Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle fs-5 me-2"></i>
+                            <span class="small fw-bold">{{ auth()->user()->name }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3" style="min-width: 200px;">
+                            <li class="text-center mb-3">
+                                <div class="bg-primary bg-opacity-10 py-3 rounded-4">
+                                    <div class="fw-bold text-dark">{{ auth()->user()->username }}</div>
+                                    <div class="tiny text-muted fw-bold text-uppercase">{{ auth()->user()->role ?? 'Administrator' }}</div>
+                                </div>
+                            </li>
+                            <li><a class="dropdown-item rounded-3" href="#"><i class="fas fa-user-edit"></i> My Profile</a></li>
+                            <li><a class="dropdown-item rounded-3" href="#"><i class="fas fa-key"></i> Change Password</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger fw-bold rounded-3">
+                                        <i class="fas fa-sign-out-alt"></i> Logout System
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    @endauth
                 </ul>
             </div>
         </div>
@@ -292,11 +356,21 @@
 
     <!-- Main Dynamic Content -->
     <main class="content-container animate__animated animate__fadeIn">
+        @if (session()->has('message'))
+            <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4 rounded-3" role="alert">
+                <i class="fas fa-check-circle me-2"></i> {{ session('message') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <!-- Livewire Component Slot -->
         {{ $slot }}
     </main>
 
-    <!-- Required Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Essential Scripts -->
     @livewireScripts
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

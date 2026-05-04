@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\V1\Tenant;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Tenant\User;
+use App\Models\User;
 use App\Models\Tenant\UserPermission;
 use Illuminate\Support\Facades\DB;
 

@@ -71,7 +71,15 @@
     </div>
 
     @if (session()->has('message'))
-        <div class="alert alert-info border-0 shadow-sm mb-4">{{ session('message') }}</div>
+        <div class="alert alert-info border-0 shadow-sm mb-4">
+            <i class="fas fa-check-circle me-1"></i> {{ session('message') }}
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div class="alert alert-danger border-0 shadow-sm mb-4">
+            <i class="fas fa-exclamation-triangle me-1"></i> {{ session('error') }}
+        </div>
     @endif
 
     <!-- Data Table -->
@@ -106,7 +114,10 @@
                             @endif
 
                             @if($showColumns['admission_no'])
-                            <td><span class="badge bg-light text-primary border px-2 py-1">{{ $student->admission_no }}</span></td>
+                            <td>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2 py-1">{{ $student->system_id ?? 'N/A' }}</span>
+                                <div class="small text-muted mt-1" style="font-size: 10px;">Adm: {{ $student->admission_no }}</div>
+                            </td>
                             @endif
 
                             @if($showColumns['name'])
@@ -115,7 +126,7 @@
 
                             @if($showColumns['academic'])
                             <td>
-                                <div class="small fw-bold">{{ $student->schoolClass->name }} - {{ $student->section->name }}</div>
+                                <div class="small fw-bold">{{ $student->schoolClass->name }} - {{ $student->section->name ?? 'No Section' }}</div>
                                 <div class="small text-muted">{{ $student->campus->name }}</div>
                             </td>
                             @endif
@@ -162,11 +173,42 @@
 
                             <td class="text-end pe-4">
                                 <div class="btn-group">
-                                    <button title="View Profile" class="btn btn-outline-info btn-sm rounded-circle me-1"><i class="fas fa-eye"></i></button>
-                                    <a href="/student-fee-plan/{{ $student->id }}" title="Edit Student Fee Plan (Scholarships/Discounts)" class="btn btn-warning btn-sm rounded-circle me-1 shadow-sm animate__animated animate__pulse animate__infinite"><i class="fas fa-file-invoice-dollar"></i></a>
-                                    <button title="Edit Student Bio" class="btn btn-outline-primary btn-sm rounded-circle me-1"><i class="fas fa-edit"></i></button>
-                                    <button title="Print ID" class="btn btn-outline-dark btn-sm rounded-circle me-1"><i class="fas fa-id-card"></i></button>
-                                    <button onclick="confirm('Delete student record?') || event.stopImmediatePropagation()" wire:click="deleteStudent({{ $student->id }})" title="Delete" class="btn btn-outline-danger btn-sm rounded-circle"><i class="fas fa-trash"></i></button>
+                                    {{-- 1. View Profile --}}
+                                    <a href="{{ route('students.profile', $student->id) }}"
+                                       title="View Profile"
+                                       class="btn btn-outline-info btn-sm rounded-circle me-1">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    {{-- 2. Fee Plan (create or view/edit) --}}
+                                    <a href="{{ route('create.fee-plan.form', ['sid' => $student->id]) }}"
+                                       title="Manage Fee Plan"
+                                       class="btn btn-warning btn-sm rounded-circle me-1 shadow-sm">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </a>
+
+                                    {{-- 3. Edit Student Bio --}}
+                                    <a href="{{ route('students.admission') }}?edit={{ $student->id }}"
+                                       title="Edit Student Bio"
+                                       class="btn btn-outline-primary btn-sm rounded-circle me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    {{-- 4. Print Admission Form (opens profile in new tab) --}}
+                                    <a href="{{ route('students.profile', $student->id) }}"
+                                       target="_blank"
+                                       title="Print Admission / ID"
+                                       class="btn btn-outline-dark btn-sm rounded-circle me-1">
+                                        <i class="fas fa-id-card"></i>
+                                    </a>
+
+                                    {{-- 5. Delete Student --}}
+                                    <button wire:click="deleteStudent({{ $student->id }})"
+                                            wire:confirm="Delete this student's entire record? This cannot be undone."
+                                            title="Delete Student"
+                                            class="btn btn-outline-danger btn-sm rounded-circle">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>

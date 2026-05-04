@@ -152,7 +152,7 @@
                     <tbody>
                         @forelse($fee_items as $item)
                             <tr>
-                                <td class="small">{{ $item->feeParticular->name }}</td>
+                                <td class="small">{{ $item->particular->name ?? 'Unknown' }}</td>
                                 <td class="small fw-bold text-end">{{ number_format($item->actual_amount) }}</td>
                             </tr>
                         @empty
@@ -192,7 +192,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <style>
     @media print {
@@ -204,3 +203,5 @@
     }
     .tiny { font-size: 0.7rem; }
 </style>
+</div>
+

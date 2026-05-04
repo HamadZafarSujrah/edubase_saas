@@ -45,18 +45,27 @@
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Academic Session</label>
+                    <select wire:model.live="session_id" class="form-select bg-light border-0 shadow-sm">
+                        @foreach(\App\Models\Academic\Session::all() as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <hr class="my-4">
 
                 <div class="row g-2 mb-4">
                     <div class="col-7">
                         <label class="form-label small fw-bold">Billing Month</label>
-                        <select wire:model="month" class="form-select bg-light border-0 shadow-sm text-capitalize">
+                        <select wire:model.live="month" class="form-select bg-light border-0 shadow-sm text-capitalize">
                             @foreach($months as $m) <option value="{{ $m }}">{{ $m }}</option> @endforeach
                         </select>
                     </div>
                     <div class="col-5">
                         <label class="form-label small fw-bold">Year</label>
-                        <input type="number" wire:model="year" class="form-control bg-light border-0 shadow-sm">
+                        <input type="number" wire:model.live="year" class="form-control bg-light border-0 shadow-sm">
                     </div>
                 </div>
 
@@ -65,8 +74,13 @@
                     <input type="date" wire:model="due_date" class="form-control bg-light border-0 shadow-sm">
                 </div>
 
-                <button wire:click="generateBulk" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-2" wire:loading.attr="disabled">
-                    <i class="fas fa-bolt me-2"></i> GENERATE BULK BILLS
+                <button wire:click="generate" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-2" wire:loading.attr="disabled">
+                    <i class="fas fa-bolt me-2"></i> 
+                    @if(!empty($selected_students))
+                        GENERATE FOR SELECTED ({{ count($selected_students) }})
+                    @else
+                        GENERATE FOR ALL SHOWN
+                    @endif
                 </button>
 
                 <a href="{{ route('print-challans', ['month' => $month, 'year' => $year, 'class_id' => $school_class_id, 'section_id' => $section_id, 'campus_id' => $campus_id]) }}" 
@@ -76,25 +90,70 @@
                 </a>
 
                 @if (session()->has('message'))
-                    <div class="alert alert-success border-0 shadow-sm mt-3 animate__animated animate__fadeIn">
-                        <i class="fas fa-check-circle me-1"></i> {{ session('message') }}
-                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: "{{ session('message') }}",
+                                confirmButtonColor: '#0d6efd',
+                            });
+                        });
+                    </script>
                 @endif
             </div>
         </div>
+
+        @script
+        <script>
+            $wire.on('challans-generated', (data) => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Generation Complete!',
+                    text: data.message,
+                    confirmButtonColor: '#0d6efd',
+                });
+            });
+
+            $wire.on('challans-error', (data) => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: data.message,
+                    confirmButtonColor: '#dc3545',
+                });
+            });
+        </script>
+        @endscript
 
         <!-- RIGHT: Student Preview -->
         <div class="col-xl-8 col-lg-7">
             <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-list-ul me-2 text-primary"></i> Billing Preview (Current Filter)</h6>
-                    <span class="badge bg-light text-primary border px-3">Total: {{ count($this->filteredStudents) }} Students</span>
+                    <div>
+                        <h6 class="mb-0 fw-bold"><i class="fas fa-list-ul me-2 text-primary"></i> 
+                            {{ $showOnlyPending ? 'Students With Not Generated Challans' : 'All Students (Billing Preview)' }}
+                        </h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button wire:click="$set('showOnlyPending', {{ $showOnlyPending ? 'false' : 'true' }})" 
+                                class="btn btn-sm {{ $showOnlyPending ? 'btn-outline-primary' : 'btn-primary' }} fw-bold px-3">
+                            <i class="fas {{ $showOnlyPending ? 'fa-users' : 'fa-filter' }} me-1"></i>
+                            {{ $showOnlyPending ? 'Show All Students' : 'Show Only Pending' }}
+                        </button>
+                        <span class="badge bg-light text-primary border px-3">Total: {{ count($this->filteredStudents) }} Students</span>
+                    </div>
                 </div>
                 <div class="table-responsive" style="max-height: 500px;">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light sticky-top">
                             <tr class="tiny fw-bold text-uppercase text-muted border-bottom">
-                                <th class="ps-4">Reg No</th>
+                                <th class="ps-4" width="40px">
+                                    <div class="form-check">
+                                        <input type="checkbox" wire:model.live="selectAll" class="form-check-input">
+                                    </div>
+                                </th>
+                                <th>Reg No</th>
                                 <th>Student Name</th>
                                 <th>Campus / Class</th>
                                 <th class="text-end pe-4">Base Fee Status</th>
@@ -103,14 +162,19 @@
                         <tbody>
                             @forelse($this->filteredStudents as $student)
                                 <tr>
-                                    <td class="ps-4 small text-muted">{{ $student->admission_no }}</td>
+                                    <td class="ps-4">
+                                        <div class="form-check">
+                                            <input type="checkbox" wire:model.live="selected_students" value="{{ $student->id }}" class="form-check-input">
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">{{ $student->admission_no }}</td>
                                     <td>
                                         <div class="fw-bold small">{{ $student->first_name }} {{ $student->last_name }}</div>
                                         <div class="tiny text-muted">Father: {{ $student->father_name }}</div>
                                     </td>
                                     <td>
                                         <div class="small fw-bold text-primary">{{ $student->campus->name ?? 'N/A' }}</div>
-                                        <div class="tiny text-muted">{{ $student->schoolClass->name ?? '' }} - {{ $student->section->name ?? '' }}</div>
+                                        <div class="tiny text-muted">{{ $student->schoolClass->name ?? '' }} - {{ $student->section?->name ?? '' }}</div>
                                     </td>
                                     <td class="text-end pe-4">
                                         @if($student->fee_plan_id)
@@ -150,10 +214,11 @@
             </div>
         </div>
     </div>
-</div>
 
 <style>
     .transition-hover { transition: all 0.3s ease; }
     .transition-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
     .tiny { font-size: 0.75rem; }
 </style>
+</div>
+

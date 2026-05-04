@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Finance\Challan;
 use Illuminate\Http\Request;
-use App\Models\Tenant\Tenant;
+use App\Models\Tenant;
 
 class PrintChallanController extends Controller
 {
