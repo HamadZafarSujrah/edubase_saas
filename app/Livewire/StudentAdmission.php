@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Student\Student;
 use App\Models\Student\Family;
 use App\Models\Student\StudentVisitor;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 
 class StudentAdmission extends Component
 {
-    use WithFileUploads;
+    use WithFileUploads, AuthorizesRequests;
 
     // Academic Selection
     public $session_id, $campus_id, $school_class_id, $section_id, $fee_plan_id;
@@ -225,6 +226,13 @@ class StudentAdmission extends Component
 
     public function save($action = 'new')
     {
+        if ($this->editing && $this->student_id) {
+            $studentToUpdate = Student::findOrFail($this->student_id);
+            $this->authorize('update', $studentToUpdate);
+        } else {
+            $this->authorize('create', Student::class);
+        }
+
         // When editing, ignore the current student's own admission_no for uniqueness check
         $admissionNoRule = $this->editing
             ? 'required|unique:students,admission_no,' . $this->student_id
@@ -261,6 +269,7 @@ class StudentAdmission extends Component
                     'father_cnic' => $this->father_cnic,
                     'mother_name' => $this->mother_name,
                     'mother_cnic' => $this->mother_cnic,
+                    'email' => $this->father_email,
                     'guardian_name' => $this->guardian_name,
                     'guardian_phone' => $this->guardian_phone,
                     'address' => $this->address,
@@ -282,6 +291,7 @@ class StudentAdmission extends Component
                 'cnic_no' => $this->cnic_no,
                 'first_name' => $this->first_name,
                 'last_name' => $this->last_name,
+                'email' => $this->father_email,
                 'date_of_birth' => $this->date_of_birth,
                 'place_of_birth' => $this->place_of_birth,
                 'gender' => $this->gender,
@@ -380,9 +390,11 @@ class StudentAdmission extends Component
                 }
             }
 
-            // 6. Handle Student Image
+            // 6. Handle Student Image with MediaLibrary
             if ($this->student_image) {
-                $student->update(['student_image' => $this->student_image->store('students', 'public')]);
+                $student->addMedia($this->student_image->getRealPath())
+                    ->usingFileName($this->student_image->getClientOriginalName())
+                    ->toMediaCollection('profile_photos');
             }
 
             DB::commit();

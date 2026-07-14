@@ -19,10 +19,15 @@
                     <label class="tiny fw-bold text-muted ps-1">Year</label>
                     <input type="number" wire:model.live="year" class="form-control border-0 bg-light rounded-3 shadow-sm" placeholder="Year">
                 </div>
-                <div class="col-md-2 d-flex gap-2">
+                <div class="col-md-4 d-flex gap-2">
                     <a href="{{ route('finance.generate-challans') }}" class="btn btn-primary btn-sm rounded-3 px-3 flex-fill">
                         <i class="fas fa-magic me-1"></i> Generate Bills
                     </a>
+                    @if(count($selected_challans) > 0)
+                        <a href="{{ route('print-challans', ['ids' => $selected_challans]) }}" target="_blank" class="btn btn-dark btn-sm rounded-3 px-3 flex-fill animate__animated animate__pulse">
+                            <i class="fas fa-print me-1"></i> Print Selected ({{ count($selected_challans) }})
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

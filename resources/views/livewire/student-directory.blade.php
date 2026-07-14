@@ -27,6 +27,9 @@
                 </ul>
             </div>
             
+            <button wire:click="exportExcel" class="btn btn-outline-success shadow-sm">
+                <i class="fas fa-file-excel me-1"></i> Export Excel
+            </button>
             <a href="/student-admission" class="btn btn-primary shadow-sm"><i class="fas fa-user-plus me-1"></i> New Admission</a>
         </div>
     </div>
@@ -105,8 +108,8 @@
                         <tr>
                             @if($showColumns['photo'])
                             <td class="ps-4">
-                                @if($student->student_image)
-                                    <img src="{{ asset('storage/' . $student->student_image) }}" class="rounded-circle border" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($student->first_name) }}&background=0D8ABC&color=fff';">
+                                @if($student->hasMedia('profile_photos'))
+                                    <img src="{{ $student->getFirstMediaUrl('profile_photos') }}" class="rounded-circle border" style="width: 45px; height: 45px; object-fit: cover;">
                                 @else
                                     <img src="https://ui-avatars.com/api/?name={{ urlencode($student->first_name) }}&background=E9ECEF&color=adb5bd" class="rounded-circle border" style="width: 45px; height: 45px; object-fit: cover;">
                                 @endif

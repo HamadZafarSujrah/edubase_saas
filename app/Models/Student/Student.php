@@ -5,14 +5,16 @@ namespace App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasTenant;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Academic\Session;
 use App\Models\Campus\Campus;
 use App\Models\Academic\SchoolClass;
 use App\Models\Academic\Section;
 
-class Student extends Model
+class Student extends Model implements HasMedia
 {
-    use HasFactory, HasTenant;
+    use HasFactory, HasTenant, InteractsWithMedia;
 
     protected $fillable = [
         'tenant_id',
@@ -26,6 +28,7 @@ class Student extends Model
         'cnic_no',
         'first_name',
         'last_name',
+        'email',
         'date_of_birth',
         'place_of_birth',
         'gender',
@@ -74,8 +77,7 @@ class Student extends Model
         'guardian_annual_income' => 'decimal:2',
     ];
 
-    public function session() { return $this->belongsTo(Session::class); }
-    public function academicSession() { return $this->belongsTo(Session::class, 'session_id'); }
+    public function session() { return $this->belongsTo(Session::class, 'session_id'); }
     public function campus() { return $this->belongsTo(Campus::class); }
     public function schoolClass() { return $this->belongsTo(SchoolClass::class, 'school_class_id'); }
     public function section() { return $this->belongsTo(Section::class); }

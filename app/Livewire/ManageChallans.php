@@ -58,6 +58,13 @@ class ManageChallans extends Component
 
     public function markAsPaid($id = null)
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('fee.challan.payments')) {
+            $this->dispatch('error', message: 'You are not authorized to process payments.');
+            session()->flash('error', 'You are not authorized to process payments.');
+            return;
+        }
+
         $ids = $id ? [$id] : $this->selected_challans;
 
         if (empty($ids)) {
@@ -116,6 +123,12 @@ class ManageChallans extends Component
 
     public function deleteChallan($id)
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('fee.challan.payments')) {
+            session()->flash('error', 'You are not authorized to delete challans.');
+            return;
+        }
+
         $challan = Challan::findOrFail($id);
         
         // If it was paid, we need to reverse the journal entries

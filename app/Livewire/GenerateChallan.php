@@ -9,10 +9,14 @@ use App\Models\Finance\FeePlanParticular;
 use App\Models\Finance\Challan;
 use App\Models\Finance\ChallanItem;
 use Carbon\Carbon;
-use DB;
+use Illuminate\Support\Facades\DB;
+use App\Services\FeeService;
 
 class GenerateChallan extends Component
 {
+
+    // Injecting FeeService using Livewire's app() or dependency injection
+
     public $campus_id, $school_class_id, $section_id, $month, $year, $due_date;
     public $session_id; // Added for session filtering
     public $processing = false;
@@ -26,7 +30,7 @@ class GenerateChallan extends Component
 
     public function getFilteredStudentsProperty()
     {
-        $query = Student::with(['campus', 'schoolClass', 'section', 'academicSession']);
+        $query = Student::with(['campus', 'schoolClass', 'section', 'session']);
         
         if ($this->campus_id) $query->where('campus_id', $this->campus_id);
         if ($this->school_class_id) $query->where('school_class_id', $this->school_class_id);
@@ -79,6 +83,12 @@ class GenerateChallan extends Component
 
     public function generate()
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('fee.challan.generate')) {
+            session()->flash('error', 'You are not authorized to generate challans.');
+            return;
+        }
+
         $this->validate([
             'month' => 'required',
             'year' => 'required',
@@ -102,54 +112,16 @@ class GenerateChallan extends Component
             return;
         }
 
+        $feeService = app(FeeService::class);
+
         foreach ($students as $student) {
-            // Check if challan already exists for this month/year/student
-            $exists = Challan::where(['student_id' => $student->id, 'month' => $this->month, 'year' => $this->year])->exists();
-            if ($exists) continue;
-
-            // NEW: Get INDIVIDUALIZED items for this student
-            $personalParticulars = \App\Models\Finance\StudentFeePlanItem::with('particular')
-                ->where('student_id', $student->id)
-                ->get();
-
-            if ($personalParticulars->isEmpty()) continue;
-
-            DB::transaction(function() use ($student, $personalParticulars) {
-                // Calculate net total (Actual - Discount)
-                $total = 0;
-                foreach ($personalParticulars as $pp) {
-                    $total += ($pp->actual_amount - $pp->discount_amount);
-                }
-                
-                // Create Challan Header
-                $challan = Challan::create([
-                    'tenant_id' => $student->tenant_id,
-                    'student_id' => $student->id,
-                    'challan_no' => 'CHL-' . strtoupper($this->month) . '-' . $this->year . '-' . str_pad($student->id, 5, '0', STR_PAD_LEFT) . '-' . rand(10,99),
-                    'month' => $this->month,
-                    'year' => $this->year,
-                    'issue_date' => date('Y-m-d'),
-                    'due_date' => $this->due_date,
-                    'total_amount' => $total,
-                    'status' => 'pending'
-                ]);
-
-                // Create Items using customized amounts
-                foreach ($personalParticulars as $pp) {
-                    $netAmount = $pp->actual_amount - $pp->discount_amount;
-                    if ($netAmount <= 0) continue; // Skip if fully discounted
-
-                    ChallanItem::create([
-                        'challan_id' => $challan->id,
-                        'fee_particular_id' => $pp->fee_particular_id,
-                        'particular_name' => $pp->particular->name,
-                        'amount' => $netAmount
-                    ]);
-                }
-            });
-
-            $this->generated_count++;
+            $challan = $feeService->generateMonthlyChallan($student, $this->month, $this->year, $this->due_date);
+            
+            if ($challan) {
+                $this->generated_count++;
+            }
         }
+
 
         $this->selected_students = [];
         $this->selectAll = false;

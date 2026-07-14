@@ -5,12 +5,16 @@
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
+        "barryvdh/laravel-dompdf": "*",
         "guzzlehttp/guzzle": "^7.8",
-        "laravel/framework": "^13.0",
+        "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "^3.4"
+        "livewire/livewire": "^3.4",
+        "maatwebsite/excel": "*",
+        "spatie/laravel-medialibrary": "*",
+        "spatie/laravel-permission": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -55,7 +59,8 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "platform-check": false
     },
     "minimum-stability": "dev",
     "prefer-stable": true

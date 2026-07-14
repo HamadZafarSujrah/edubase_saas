@@ -17,6 +17,7 @@ class Family extends Model
         'father_cnic',
         'mother_name',
         'mother_cnic',
+        'email',
         'guardian_name',
         'guardian_phone',
         'address',

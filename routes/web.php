@@ -102,6 +102,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/paid-challans', PaidChallans::class)->name('finance.paid-challans');
         Route::get('/pay-fee-challan', PayFeeChallan::class)->name('finance.pay-fee-challan');
         Route::get('/print-challans', [PrintChallanController::class, 'bulkPrint'])->name('print-challans');
+        Route::get('/download-challans', [PrintChallanController::class, 'downloadPdf'])->name('download-challans');
     });
 
     // Developer Tools

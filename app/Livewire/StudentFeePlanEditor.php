@@ -266,7 +266,7 @@ class StudentFeePlanEditor extends Component
             // Pass mode information to the view so Blade can disable fields
             'mode' => $this->mode,
             'viewOnly' => $this->viewOnly,
-            'student'   => Student::with(['campus', 'schoolClass', 'section', 'feePlan', 'academicSession'])->findOrFail($this->student_id),
+            'student'   => Student::with(['campus', 'schoolClass', 'section', 'feePlan', 'session'])->findOrFail($this->student_id),
             'fee_plans' => FeePlan::where('tenant_id', $this->current_tenant_id)->where('is_active', true)->get(),
             'totals'    => $this->totals,
         ])->layout('layouts.app');

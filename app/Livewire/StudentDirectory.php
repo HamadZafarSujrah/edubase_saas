@@ -4,15 +4,18 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Student\Student;
 use App\Models\Campus\Campus;
 use App\Models\Academic\SchoolClass;
 use App\Models\Academic\Section;
 use App\Models\Academic\CampusClass;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StudentsExport;
 
 class StudentDirectory extends Component
 {
-    use WithPagination;
+    use WithPagination, AuthorizesRequests;
     protected $paginationTheme = 'bootstrap';
 
     // Filters
@@ -95,6 +98,7 @@ class StudentDirectory extends Component
     public function deleteStudent($id)
     {
         $student = Student::findOrFail($id);
+        $this->authorize('delete', $student);
 
         $hasPendingChallans = \App\Models\Finance\Challan::where('student_id', $id)
             ->where('status', '!=', 'paid')
@@ -112,5 +116,11 @@ class StudentDirectory extends Component
 
         $student->delete();
         session()->flash('message', 'Student record deleted.');
+    }
+
+    public function exportExcel()
+    {
+        $tenant_id = session('tenant_id') ?? auth()->user()->tenant_id;
+        return Excel::download(new StudentsExport($tenant_id), 'students_list.xlsx');
     }
 }

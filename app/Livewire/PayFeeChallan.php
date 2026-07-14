@@ -47,7 +47,7 @@ class PayFeeChallan extends Component
         if (!$this->challan_id) {
             abort(400, 'Challan ID is required.');
         }
-        $this->challan  = Challan::with(['student.campus', 'student.schoolClass', 'student.section', 'student.academicSession', 'items'])->findOrFail($this->challan_id);
+        $this->challan  = Challan::with(['student.campus', 'student.schoolClass', 'student.section', 'student.session', 'items'])->findOrFail($this->challan_id);
         $this->student  = $this->challan->student;
 
         $this->due_date  = $this->challan->due_date ?? '';
