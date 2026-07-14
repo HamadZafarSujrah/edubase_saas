@@ -57,6 +57,12 @@ class UsersAndPermissions extends Component
 
     public function save()
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('users.manage')) {
+            session()->flash('error', 'You are not authorized to manage users.');
+            return;
+        }
+
         $rules = [
             'username' => 'required|unique:users,username,' . $this->editing_id,
             'name' => 'required',

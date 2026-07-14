@@ -15,6 +15,8 @@ class Role extends Model
         'slug',
         'description',
         'tenant_id',
+        'created_by',
+        'updated_by',
     ];
 
     /**

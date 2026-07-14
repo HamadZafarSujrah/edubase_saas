@@ -11,6 +11,8 @@ class PrintChallanController extends Controller
 {
     public function bulkPrint(Request $request)
     {
+        $this->authorize('viewAny', Challan::class);
+
         $query = Challan::with(['student.schoolClass', 'student.section', 'student.campus', 'items']);
 
         // 1. Filter by specific IDs (if provided)
@@ -48,6 +50,8 @@ class PrintChallanController extends Controller
 
     public function downloadPdf(Request $request)
     {
+        $this->authorize('viewAny', Challan::class);
+
         $query = Challan::with(['student.schoolClass', 'student.section', 'student.campus', 'items']);
         
         if ($request->ids && is_array($request->ids)) {

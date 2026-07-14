@@ -78,8 +78,14 @@ class ManageRoles extends Component
 
     public function updateRolePermissions()
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('roles.manage')) {
+            session()->flash('error', 'You are not authorized to manage roles.');
+            return;
+        }
+
         if (!$this->selectedRoleId) return;
-        
+
         $role = Role::find($this->selectedRoleId);
         if ($role) {
             // Because rolePermissions might contain strings or booleans from checkboxes, ensure we sync an array of IDs
@@ -90,6 +96,12 @@ class ManageRoles extends Component
 
     public function saveRole()
     {
+        $user = auth()->user();
+        if (!$user->isSuperAdmin() && !$user->hasPermission('roles.manage')) {
+            session()->flash('error', 'You are not authorized to manage roles.');
+            return;
+        }
+
         $this->validate();
 
         $role = Role::create([

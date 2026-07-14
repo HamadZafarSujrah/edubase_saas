@@ -6,15 +6,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "barryvdh/laravel-dompdf": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
         "guzzlehttp/guzzle": "^7.8",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^3.4",
-        "maatwebsite/excel": "*",
-        "spatie/laravel-medialibrary": "*",
-        "spatie/laravel-permission": "*"
+        "maatwebsite/excel": "^3.1",
+        "spatie/laravel-medialibrary": "^11.22",
+        "spatie/laravel-permission": "^6.25"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

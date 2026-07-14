@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Tenant\Tenant;
+use App\Models\Tenant;
 use App\Models\Campus\Campus;
 use App\Models\Academic\Session;
 use App\Models\Academic\SchoolClass;
@@ -19,7 +19,12 @@ class DemoDataSeeder extends Seeder
             ['subdomain' => 'alhikma'],
             ['name' => 'Al-Hikma School System']
         );
-        
+
+        // Seeders run outside a request, so there's no session tenant_id.
+        // TenantScope fails closed without a resolvable tenant context, so
+        // set it explicitly for the rest of this run.
+        config(['tenant.current_id' => $tenant->id]);
+
         // 2. Register first campus
         $campus = Campus::updateOrCreate(
             ['tenant_id' => $tenant->id, 'name' => 'Main Campus'],

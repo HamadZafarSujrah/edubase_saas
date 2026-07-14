@@ -16,8 +16,9 @@ trait HasTenant
         static::addGlobalScope(new TenantScope);
 
         static::creating(function ($model) {
-            if (Session::has('tenant_id')) {
-                $model->tenant_id = Session::get('tenant_id');
+            $tenantId = Session::get('tenant_id') ?? config('tenant.current_id');
+            if ($tenantId) {
+                $model->tenant_id = $tenantId;
             }
         });
     }
