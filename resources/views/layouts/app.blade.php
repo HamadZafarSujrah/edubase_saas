@@ -413,6 +413,7 @@
                             @if(auth()->user()->isSuperAdmin() && !auth()->user()->tenant_id)
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item rounded-3" href="{{ route('platform.tenants') }}"><i class="fas fa-building text-primary"></i> Platform Admin</a></li>
+                                <li><a class="dropdown-item rounded-3" href="{{ route('platform.tenant-invoices') }}"><i class="fas fa-file-invoice-dollar text-primary"></i> Subscription Invoices</a></li>
                                 <li><a class="dropdown-item rounded-3" href="{{ route('select-tenant') }}"><i class="fas fa-exchange-alt text-primary"></i> Switch Institution</a></li>
                             @endif
                             <li><hr class="dropdown-divider"></li>

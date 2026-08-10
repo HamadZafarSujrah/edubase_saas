@@ -129,6 +129,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/select-tenant', SelectTenant::class)->name('select-tenant');
     Route::get('/platform/tenants', \App\Livewire\TenantManager::class)->name('platform.tenants');
+    Route::get('/platform/invoices', \App\Livewire\TenantInvoiceManager::class)->name('platform.tenant-invoices');
     
     Route::match(['get', 'post'], '/logout', function () {
         auth()->logout();

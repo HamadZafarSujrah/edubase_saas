@@ -114,6 +114,48 @@
                     </div>
                 </div>
             @endif
+
+            <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h6 class="fw-bold text-primary mb-0">Billing History</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Invoice #</th>
+                                <th>Period</th>
+                                <th class="text-end">Amount</th>
+                                <th>Due Date</th>
+                                <th class="pe-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($invoices as $invoice)
+                                <tr>
+                                    <td class="ps-4 small fw-bold">{{ $invoice->invoice_no }}</td>
+                                    <td class="small">{{ $invoice->billing_period_start->format('d-M') }} — {{ $invoice->billing_period_end->format('d-M-Y') }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($invoice->amount, 2) }}</td>
+                                    <td class="small">{{ $invoice->due_date->format('d-M-Y') }}</td>
+                                    <td class="pe-4">
+                                        @if($invoice->status === 'paid')
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Paid</span>
+                                        @elseif($invoice->status === 'void')
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border">Void</span>
+                                        @else
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Unpaid</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No invoices yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>

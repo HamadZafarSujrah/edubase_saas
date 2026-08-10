@@ -10,7 +10,10 @@
                 </ol>
             </nav>
         </div>
-        <button wire:click="openModal" class="btn btn-primary shadow-sm"><i class="fas fa-plus me-1"></i> Add New Institution</button>
+        <div class="d-flex gap-2">
+            <a href="{{ route('platform.tenant-invoices') }}" class="btn btn-outline-primary shadow-sm"><i class="fas fa-file-invoice-dollar me-1"></i> Invoices</a>
+            <button wire:click="openModal" class="btn btn-primary shadow-sm"><i class="fas fa-plus me-1"></i> Add New Institution</button>
+        </div>
     </div>
 
     @if (session()->has('message'))

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Student\Student;
 use App\Models\Campus\Campus;
+use App\Models\TenantInvoice;
 use Illuminate\Support\Facades\Auth;
 
 class MySubscription extends Component
@@ -23,6 +24,7 @@ class MySubscription extends Component
             'campusCount' => $campusCount,
             'studentLimitHit' => $tenant->wouldExceedPlanLimit('students', $studentCount),
             'campusLimitHit' => $tenant->wouldExceedPlanLimit('campuses', $campusCount),
+            'invoices' => TenantInvoice::where('tenant_id', $tenantId)->latest('billing_period_start')->limit(12)->get(),
         ])->layout('layouts.app');
     }
 }
