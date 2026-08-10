@@ -3,11 +3,30 @@
 namespace App\Services;
 
 use App\Models\Communication\SMSLog;
+use App\Models\Finance\TenantSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
+    /**
+     * Reads this tenant's own SMS gateway config (provider/sender_id/api_key)
+     * from tenant_settings, set via the SMS Gateway Settings screen. Falls
+     * back to an empty config (mock provider) if the tenant hasn't set one up.
+     */
+    public function gatewayConfig(?int $tenantId): array
+    {
+        $default = ['provider' => 'mock', 'sender_id' => '', 'api_key' => ''];
+
+        if (!$tenantId) {
+            return $default;
+        }
+
+        $setting = TenantSetting::where('tenant_id', $tenantId)->where('key', 'sms_gateway_config')->first();
+
+        return ($setting && is_array($setting->value)) ? array_merge($default, $setting->value) : $default;
+    }
+
     /**
      * Send an SMS to a phone number.
      *
@@ -19,21 +38,24 @@ class SmsService
      *
      * @param string $phone
      * @param string $message
+     * @param int|null $tenantId used to look up this tenant's own gateway config
      * @return bool
      */
-    public function send($phone, $message)
+    public function send($phone, $message, ?int $tenantId = null)
     {
         // Basic cleaning of phone number
         $phone = preg_replace('/[^0-9]/', '', $phone);
+        $config = $this->gatewayConfig($tenantId);
 
         // Logging the attempt for now (Mock mode)
-        Log::info("SMS Attempt to {$phone}: {$message}");
+        Log::info("SMS Attempt to {$phone} via {$config['provider']}" . ($config['sender_id'] ? " (sender: {$config['sender_id']})" : '') . ": {$message}");
 
         // Example integration for a generic API (e.g., Twilio or local provider)
         /*
         try {
             $response = Http::post('https://api.sms-provider.com/send', [
-                'api_key' => config('services.sms.key'),
+                'api_key' => $config['api_key'],
+                'sender_id' => $config['sender_id'],
                 'to' => $phone,
                 'message' => $message,
             ]);
@@ -57,7 +79,7 @@ class SmsService
      */
     public function sendAndLog(array $data): SMSLog
     {
-        $sent = $this->send($data['phone'], $data['message']);
+        $sent = $this->send($data['phone'], $data['message'], $data['tenant_id'] ?? null);
 
         return SMSLog::create([
             'tenant_id'      => $data['tenant_id'],

@@ -285,6 +285,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/enter-marks', EnterMarks::class)->name('exam.enter-marks');
         Route::get('/examination-reports', ExaminationReports::class)->name('exam.reports');
         Route::get('/print-result-card/{examId}/{studentId}', [ResultCardController::class, 'print'])->name('print-result-card');
+
+        // SaaS Mode: tenant-side settings
+        Route::get('/my-subscription', \App\Livewire\MySubscription::class)->name('finance.my-subscription');
+        Route::get('/sms-gateway-settings', \App\Livewire\SmsGatewaySettings::class)->name('admin.sms-gateway-settings');
+        Route::get('/whatsapp-settings', \App\Livewire\WhatsAppSettings::class)->name('admin.whatsapp-settings');
     });
 
     // Developer Tools

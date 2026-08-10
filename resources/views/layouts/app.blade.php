@@ -134,6 +134,7 @@
                     </li>
 
                     <!-- ADMISSIONS -->
+                    @if(!isset($currentTenant) || $currentTenant->hasModule('academic'))
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="admissionsDrop" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user-graduate me-1 text-warning"></i> Admissions
@@ -163,6 +164,7 @@
                             <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-bullhorn"></i> Fee Defaulters Total Amount</a></li>
                         </ul>
                     </li>
+                    @endif
 
                     <!-- EXTRAS -->
                     <li class="nav-item dropdown">
@@ -185,6 +187,7 @@
                     </li>
 
                     <!-- FINANCE -->
+                    @if(!isset($currentTenant) || $currentTenant->hasModule('finance'))
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="financeDrop" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-file-invoice me-1 text-warning"></i> Finance
@@ -212,8 +215,10 @@
                             <li><a class="dropdown-item text-danger" href="{{ route('finance.voided-transactions') }}"><i class="fas fa-times-circle"></i> Voided Transactions</a></li>
                         </ul>
                     </li>
+                    @endif
 
                     <!-- EXAM & ATTENDANCE -->
+                    @if(!isset($currentTenant) || $currentTenant->hasModule('exam'))
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="examDrop" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-cog me-1 text-warning"></i> Exam & Attendance
@@ -250,6 +255,7 @@
                             <li><a class="dropdown-item" href="#"><i class="fas fa-bell"></i> App Notification Report</a></li>
                         </ul>
                     </li>
+                    @endif
 
                     <!-- HRM -->
                     @if(!isset($currentTenant) || $currentTenant->hasModule('hrm'))
@@ -299,6 +305,7 @@
                     @endif
 
                     <!-- GENERAL & HOUSE MANAGEMENT -->
+                    @if(!isset($currentTenant) || $currentTenant->hasModule('general'))
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="generalDrop" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-school me-1 text-warning"></i> General
@@ -311,6 +318,7 @@
                             <li><a class="dropdown-item" href="{{ route('general.ptm-schedule') }}"><i class="fas fa-users-cog"></i> Parent-Teacher Meetings</a></li>
                         </ul>
                     </li>
+                    @endif
                 </ul>
 
                 <!-- Right Side: Configuration Modules -->
@@ -371,9 +379,13 @@
                             
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-uppercase text-muted">Services</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-broadcast-tower text-info"></i> SMS Gateway Settings</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-envelope-open-text text-info"></i> WhatsApp Service</a></li>
+                            <li><a class="dropdown-item" href="{{ route('admin.sms-gateway-settings') }}"><i class="fas fa-broadcast-tower text-info"></i> SMS Gateway Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ route('admin.whatsapp-settings') }}"><i class="fas fa-envelope-open-text text-info"></i> WhatsApp Service</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-certificate text-info"></i> Manage Certificates</a></li>
+
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-uppercase text-muted">Billing</h6></li>
+                            <li><a class="dropdown-item" href="{{ route('finance.my-subscription') }}"><i class="fas fa-file-invoice-dollar text-success"></i> My Subscription</a></li>
 
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-uppercase text-muted">Attendance Tech</h6></li>
