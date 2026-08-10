@@ -87,7 +87,7 @@ class JournalEntryForm extends Component
         });
 
         session()->flash('message', 'Journal Entry saved successfully.');
-        return redirect()->to('/journal-inquiry');
+        return redirect()->route('finance.journal-inquiry');
     }
 
     public function render()

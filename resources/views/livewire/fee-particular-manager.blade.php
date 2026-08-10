@@ -29,6 +29,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
+            @if (session()->has('error'))
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm ps-4 py-2">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle">

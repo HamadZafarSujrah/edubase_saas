@@ -30,8 +30,8 @@
                 </div>
                 <!-- Student Image -->
                 <div class="border rounded shadow-sm p-1" style="width: 110px; height: 110px;">
-                    @if($student->student_image)
-                        <img src="{{ asset('storage/' . $student->student_image) }}" class="w-100 h-100 object-fit-cover rounded">
+                    @if($student->hasMedia('profile_photos'))
+                        <img src="{{ $student->getFirstMediaUrl('profile_photos') }}" class="w-100 h-100 object-fit-cover rounded">
                     @else
                         <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted tiny">No Photo</div>
                     @endif

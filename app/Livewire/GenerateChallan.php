@@ -25,17 +25,23 @@ class GenerateChallan extends Component
     public $selected_students = [];
     public $selectAll = false;
     public $showOnlyPending = true; // Default to showing only students without challans
+    // 'active' (default) so a bulk generation run doesn't silently pick up
+    // alumni/inactive students -- there was previously no way to exclude them
+    // at all. Switch to 'inactive' to specifically bill an alumni student
+    // for outstanding dues (documented as its own workflow), or 'all'.
+    public $status_filter = 'active';
 
     protected $queryString = ['campus_id', 'school_class_id', 'section_id'];
 
     public function getFilteredStudentsProperty()
     {
         $query = Student::with(['campus', 'schoolClass', 'section', 'session']);
-        
+
         if ($this->campus_id) $query->where('campus_id', $this->campus_id);
         if ($this->school_class_id) $query->where('school_class_id', $this->school_class_id);
         if ($this->section_id) $query->where('section_id', $this->section_id);
         if ($this->session_id) $query->where('session_id', $this->session_id);
+        if ($this->status_filter !== 'all') $query->where('is_active', $this->status_filter === 'active');
 
         if ($this->showOnlyPending) {
             $query->whereDoesntHave('challans', function($q) {
@@ -65,6 +71,7 @@ class GenerateChallan extends Component
     public function updatedSchoolClassId() { $this->resetSelection(); }
     public function updatedSectionId() { $this->resetSelection(); }
     public function updatedSessionId() { $this->resetSelection(); }
+    public function updatedStatusFilter() { $this->resetSelection(); }
 
     protected function resetSelection()
     {
@@ -113,20 +120,34 @@ class GenerateChallan extends Component
         }
 
         $feeService = app(FeeService::class);
+        $failedStudents = [];
 
+        // Isolated per-student so one bad row (a DB constraint violation, a
+        // missing relation, anything) doesn't abort challan generation for
+        // every remaining student in the batch.
         foreach ($students as $student) {
-            $challan = $feeService->generateMonthlyChallan($student, $this->month, $this->year, $this->due_date);
-            
-            if ($challan) {
-                $this->generated_count++;
+            try {
+                $challan = $feeService->generateMonthlyChallan($student, $this->month, $this->year, $this->due_date);
+
+                if ($challan) {
+                    $this->generated_count++;
+                }
+            } catch (\Throwable $e) {
+                $failedStudents[] = trim("{$student->first_name} {$student->last_name}") ?: "#{$student->id}";
+                \Illuminate\Support\Facades\Log::warning('Challan generation failed for student', [
+                    'student_id' => $student->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
-
 
         $this->selected_students = [];
         $this->selectAll = false;
         $this->processing = false;
         $msg = "Successfully generated {$this->generated_count} challans for " . strtoupper($this->month) . " {$this->year}.";
+        if (!empty($failedStudents)) {
+            $msg .= ' ' . count($failedStudents) . ' skipped due to an error: ' . implode(', ', $failedStudents) . '.';
+        }
         session()->flash('message', $msg);
         $this->dispatch('challans-generated', message: $msg);
     }

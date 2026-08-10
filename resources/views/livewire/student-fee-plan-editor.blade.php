@@ -59,7 +59,7 @@
                     <th class="bg-light text-muted ps-3">Section</th>
                     <td class="ps-3 fw-bold">{{ $student->section->name ?? '—' }}</td>
                     <th class="bg-light text-muted ps-3">Session</th>
-                    <td class="ps-3">{{ $student->academicSession->name ?? '—' }}</td>
+                    <td class="ps-3">{{ $student->session->name ?? '—' }}</td>
                 </tr>
             </table>
         </div>
@@ -156,13 +156,19 @@
                                     </td>
                                     <td>
                                         <input wire:model.live="line_items.{{ $i }}.actual_fee"
-                                               type="number" step="1"
+                                               type="number" step="1" min="0"
                                                class="form-control text-center border-0 bg-light shadow-sm fw-bold text-primary" {{ $mode === 'view' ? 'disabled' : '' }}>
+                                        @error("line_items.$i.actual_fee")
+                                            <div class="text-danger tiny mt-1">{{ $message }}</div>
+                                        @enderror
                                     </td>
                                     <td>
                                         <input wire:model.live="line_items.{{ $i }}.discount"
-                                               type="number" step="1"
+                                               type="number" step="1" min="0"
                                                class="form-control text-center border-0 bg-light shadow-sm fw-bold text-danger" {{ $mode === 'view' ? 'disabled' : '' }}>
+                                        @error("line_items.$i.discount")
+                                            <div class="text-danger tiny mt-1">{{ $message }}</div>
+                                        @enderror
                                     </td>
                                     <td>
                                         <input wire:model="line_items.{{ $i }}.fee_after_discount"

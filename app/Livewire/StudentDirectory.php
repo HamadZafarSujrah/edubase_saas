@@ -23,6 +23,11 @@ class StudentDirectory extends Component
     public $campus_id = '';
     public $school_class_id = '';
     public $section_id = '';
+    // 'active' (default) | 'inactive' | 'all' -- lets alumni/non-enrolled
+    // students be found deliberately instead of always being mixed in with
+    // (or, with no filter at all, indistinguishable from) currently
+    // enrolled students.
+    public $status_filter = 'active';
 
     // Advanced Column Visibility (as per your suggestion)
     public $showColumns = [
@@ -52,10 +57,11 @@ class StudentDirectory extends Component
     public function updatingSearch() { $this->resetPage(); }
     public function updatingCampusId() { $this->resetPage(); $this->school_class_id = ''; $this->section_id = ''; }
     public function updatingSchoolClassId() { $this->resetPage(); $this->section_id = ''; }
+    public function updatingStatusFilter() { $this->resetPage(); }
 
     public function render()
     {
-        $query = Student::with(['campus', 'schoolClass', 'section'])
+        $query = Student::with(['campus', 'schoolClass', 'section', 'media'])
             ->where(function($q) {
                 $q->where('first_name', 'like', '%' . $this->search . '%')
                   ->orWhere('last_name', 'like', '%' . $this->search . '%')
@@ -73,6 +79,10 @@ class StudentDirectory extends Component
 
         if ($this->section_id) {
             $query->where('section_id', $this->section_id);
+        }
+
+        if ($this->status_filter !== 'all') {
+            $query->where('is_active', $this->status_filter === 'active');
         }
 
         // Logic for dynamic dropdowns

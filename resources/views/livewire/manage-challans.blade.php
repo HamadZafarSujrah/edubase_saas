@@ -3,7 +3,7 @@
     <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
         <div class="card-body p-4 bg-white">
             <div class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="tiny fw-bold text-muted ps-1">Search Student / Bill #</label>
                     <input type="text" wire:model.live.debounce.300ms="search" class="form-control border-0 bg-light rounded-3 px-3 shadow-sm" placeholder="Name, Adm No, or Bill #...">
                 </div>
@@ -15,9 +15,17 @@
                         @foreach($months as $m) <option value="{{ $m }}">{{ strtoupper($m) }}</option> @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="tiny fw-bold text-muted ps-1">Year</label>
                     <input type="number" wire:model.live="year" class="form-control border-0 bg-light rounded-3 shadow-sm" placeholder="Year">
+                </div>
+                <div class="col-md-2">
+                    <label class="tiny fw-bold text-muted ps-1">Student</label>
+                    <select wire:model.live="student_status_filter" class="form-select border-0 bg-light rounded-3 shadow-sm">
+                        <option value="active">Active</option>
+                        <option value="inactive">Alumni / Inactive</option>
+                        <option value="all">All</option>
+                    </select>
                 </div>
                 <div class="col-md-4 d-flex gap-2">
                     <a href="{{ route('finance.generate-challans') }}" class="btn btn-primary btn-sm rounded-3 px-3 flex-fill">
@@ -113,23 +121,34 @@
                                        target="_blank" class="btn btn-sm btn-light border-0" title="Print">
                                         <i class="fas fa-print"></i>
                                     </a>
-                                    <button type="button"
-                                            onclick="Swal.fire({
-                                                title: 'Are you sure?',
-                                                text: 'You are about to DELETE this challan. This action cannot be undone.',
-                                                icon: 'warning',
-                                                showCancelButton: true,
-                                                confirmButtonColor: '#dc3545',
-                                                cancelButtonColor: '#6c757d',
-                                                confirmButtonText: 'Yes, delete it!'
-                                            }).then((result) => {
-                                                if (result.isConfirmed) {
-                                                    @this.deleteChallan({{ $challan->id }});
-                                                }
-                                            })"
-                                            class="btn btn-sm btn-outline-danger border-0" title="Delete">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    @if($challan->status !== 'paid')
+                                        <a href="{{ route('finance.add-challan-amount', ['challan_id' => $challan->id]) }}" class="btn btn-sm btn-light border-0" title="Add Amount">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </a>
+                                    @endif
+                                    @if($challan->status === 'paid' || $challan->receipt_no)
+                                        <button type="button" wire:click="openVoidModal({{ $challan->id }})" class="btn btn-sm btn-outline-danger border-0" title="Void">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                    @else
+                                        <button type="button"
+                                                onclick="Swal.fire({
+                                                    title: 'Are you sure?',
+                                                    text: 'You are about to DELETE this challan. This action cannot be undone.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonColor: '#dc3545',
+                                                    cancelButtonColor: '#6c757d',
+                                                    confirmButtonText: 'Yes, delete it!'
+                                                }).then((result) => {
+                                                    if (result.isConfirmed) {
+                                                        @this.deleteChallan({{ $challan->id }});
+                                                    }
+                                                })"
+                                                class="btn btn-sm btn-outline-danger border-0" title="Delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -148,6 +167,32 @@
             {{ $challans->links() }}
         </div>
     </div>
+
+    @if($isVoidModalOpen)
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.4);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-light">
+            <h5 class="modal-title fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Void Payment</h5>
+            <button type="button" class="btn-close" wire:click="closeVoidModal"></button>
+          </div>
+          <div class="modal-body p-4">
+              <p class="text-muted small">This will reverse the ledger entries for this payment and mark the challan unpaid again. This action is logged for the audit trail.</p>
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Reason for Voiding <span class="text-danger">*</span></label>
+                  <textarea class="form-control bg-light" rows="3" wire:model="void_reason" placeholder="E.g. Entered against the wrong student, duplicate payment, ..."></textarea>
+                  @error('void_reason') <span class="text-danger small fw-bold">{{ $message }}</span>@enderror
+              </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" wire:click="closeVoidModal">Cancel</button>
+            <button type="button" class="btn btn-danger px-4" wire:click="confirmVoid">Void Payment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    @endif
+
     <style>
         .tiny { font-size: 0.75rem; }
     </style>

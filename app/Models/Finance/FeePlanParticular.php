@@ -12,12 +12,13 @@ class FeePlanParticular extends Model
 
     protected $fillable = [
         'tenant_id', 'campus_id', 'fee_plan_id', 'fee_particular_id',
-        'amount', 'min_amount', 'is_first_time',
+        'amount', 'min_amount', 'is_first_time', 'is_mapped',
         'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
     ];
 
     protected $casts = [
         'is_first_time' => 'boolean',
+        'is_mapped' => 'boolean',
         'jan' => 'boolean', 'feb' => 'boolean', 'mar' => 'boolean', 'apr' => 'boolean',
         'may' => 'boolean', 'jun' => 'boolean', 'jul' => 'boolean', 'aug' => 'boolean',
         'sep' => 'boolean', 'oct' => 'boolean', 'nov' => 'boolean', 'dec' => 'boolean',

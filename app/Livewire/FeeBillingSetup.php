@@ -17,22 +17,43 @@ class FeeBillingSetup extends Component
         if ($c) $this->campus_id = $c->id;
     }
 
-    public function updated($propertyName)
+    public function updatedCampusId()
     {
-        // Auto-save logic if something changes in the matrix
-        if (strpos($propertyName, 'editing_amounts') !== false) {
-           // We can implement a bulk save button instead for better performance
-        }
+        // Switching campus must discard any not-yet-saved edits for the
+        // previous campus -- otherwise they silently ride along and get
+        // committed the next time Save All Changes is clicked, applying to
+        // rows the admin can no longer even see on screen.
+        $this->editing_amounts = [];
     }
 
     public function saveAll()
     {
+        $errors = [];
+
         foreach ($this->editing_amounts as $id => $data) {
+            $amount = (float) ($data['amount'] ?? 0);
+            $minAmount = (float) ($data['min_amount'] ?? 0);
+
+            if ($amount < 0 || $minAmount < 0) {
+                $errors[] = "Record #{$id}: amount and minimum amount cannot be negative.";
+                continue;
+            }
+            if ($minAmount > $amount) {
+                $errors[] = "Record #{$id}: minimum amount cannot exceed the amount.";
+                continue;
+            }
+
             $record = FeePlanParticular::find($id);
             if ($record) {
-                $record->update($data);
+                $record->update(['amount' => $amount, 'min_amount' => $minAmount]);
             }
         }
+
+        if (!empty($errors)) {
+            session()->flash('error', 'Some rows were not saved: ' . implode(' ', $errors));
+            return;
+        }
+
         session()->flash('message', 'Billing Matrix updated successfully!');
     }
 
@@ -56,7 +77,8 @@ class FeeBillingSetup extends Component
 
     public function render()
     {
-        $query = FeePlanParticular::with(['campus', 'feePlan', 'particular']);
+        $query = FeePlanParticular::with(['campus', 'feePlan', 'particular'])
+            ->where('is_mapped', true);
         if ($this->campus_id) {
             $query->where('campus_id', $this->campus_id);
         }

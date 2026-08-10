@@ -14,6 +14,7 @@ class Section extends Model
         'tenant_id',
         'school_class_id',
         'campus_id',
+        'teacher_id',    // employee assigned as class teacher for this section
         'name',          // e.g. "A", "B", "Rose", "Tulip"
         'room_number',   // optional physical room
         'capacity',      // Maximum students allowed
@@ -43,6 +44,14 @@ class Section extends Model
     public function campus()
     {
         return $this->belongsTo(\App\Models\Campus\Campus::class);
+    }
+
+    /**
+     * The employee (teacher) assigned to this section.
+     */
+    public function teacher()
+    {
+        return $this->belongsTo(\App\Models\HRM\Employee::class, 'teacher_id');
     }
 
     /**

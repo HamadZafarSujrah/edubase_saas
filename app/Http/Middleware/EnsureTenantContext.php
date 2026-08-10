@@ -25,23 +25,29 @@ class EnsureTenantContext
 
         $user = auth()->user();
 
-        // 1. Logic for Super Admins / Developers
-        if ($user->isSuperAdmin()) {
-            if (!session()->has('tenant_id')) {
-                // If on a dashboard route but no tenant selected, redirect to selection
-                if ($request->is('admin/*') || $request->is('dashboard')) {
-                    // Unless they are already on the selection page
-                    if (!$request->is('select-tenant')) {
-                        return redirect()->route('select-tenant');
-                    }
-                }
-            }
-        } 
-        // 2. Logic for Regular Tenant Users (Teachers, Staff, etc)
-        else {
-            // For regular users, the tenant_id MUST come from their user record
+        // 1. Any user with a tenant_id on their own record belongs to exactly
+        // that tenant -- this includes "super admin" roles that are scoped to
+        // one institution (tenant_super_admin, Admin), not just regular
+        // staff. Always bind session tenant_id from the user record rather
+        // than gating this on a route-pattern allowlist: the previous check
+        // only ran this sync when visiting admin/* or /dashboard, so landing
+        // on any OTHER tenant-scoped page first (a bookmark, a direct nav
+        // click) left session('tenant_id') unset for the rest of the
+        // session -- every tenant-scoped query then failed closed (returned
+        // zero rows) with no error and no indication why.
+        if ($user->tenant_id) {
             if (!session()->has('tenant_id') || session('tenant_id') != $user->tenant_id) {
                 session(['tenant_id' => $user->tenant_id]);
+            }
+        }
+        // 2. True platform-level admins (Developer / Super Admin) have no
+        // tenant_id of their own and must actively choose which institution
+        // to operate as.
+        elseif ($user->isSuperAdmin()) {
+            if (!session()->has('tenant_id')) {
+                if (!$request->is('select-tenant')) {
+                    return redirect()->route('select-tenant');
+                }
             }
         }
 

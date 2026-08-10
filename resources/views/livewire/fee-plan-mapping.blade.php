@@ -28,7 +28,9 @@
                                 <td>{{ $loop->iteration }}</td>
                                 <td class="text-start fw-bold text-danger">{{ $plan->name }}</td>
                                 <td class="bg-light">
-                                    <input type="checkbox" class="form-check-input">
+                                    <input type="checkbox" class="form-check-input"
+                                        wire:click="toggleAllForPlan({{ $plan->id }})"
+                                        onclick="return confirm('Map every particular in this list to {{ $plan->name }}?');">
                                 </td>
                                 @foreach($particulars as $part)
                                     @php 

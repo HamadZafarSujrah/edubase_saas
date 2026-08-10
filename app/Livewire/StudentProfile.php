@@ -18,7 +18,7 @@ class StudentProfile extends Component
         $this->student_id = $id;
         $this->student = Student::with(['campus', 'schoolClass', 'section', 'session'])->findOrFail($id);
         
-        $tenantId = session('tenant_id') ?? 1;
+        $tenantId = session('tenant_id') ?? auth()->user()->tenant_id;
         $this->tenant = \App\Models\Tenant::find($tenantId);
 
         $this->fee_items = StudentFeePlanItem::where('student_id', $id)

@@ -4,6 +4,7 @@ namespace App\Models\Finance;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasTenant;
+use App\Models\Student\Student;
 
 class StudentFeePlanItem extends Model
 {
@@ -16,4 +17,5 @@ class StudentFeePlanItem extends Model
     ];
 
     public function particular() { return $this->belongsTo(FeeParticular::class, 'fee_particular_id'); }
+    public function student() { return $this->belongsTo(Student::class); }
 }

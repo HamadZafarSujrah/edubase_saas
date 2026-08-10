@@ -4,11 +4,9 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Finance\Challan;
-use App\Models\Finance\ChallanItem;
+use App\Models\Finance\DiscountType;
 use App\Models\Finance\GLAccount;
-use App\Models\Finance\JournalEntry;
-use App\Models\Finance\JournalItem;
-use Illuminate\Support\Facades\DB;
+use App\Services\FeeService;
 use Illuminate\Support\Facades\Auth;
 
 class PayFeeChallan extends Component
@@ -29,6 +27,12 @@ class PayFeeChallan extends Component
 
     // Line items with per-row discount support
     public $line_items = [];
+
+    // Named/catalogued discounts (sibling, merit, scholarship, ...) applied at the challan level
+    public $named_discounts = [];
+
+    // Discounts already persisted against this challan from a previous visit (read-only)
+    public $existing_discounts = [];
 
     // Computed totals (updated reactively)
     public $total_payable       = 0;
@@ -75,6 +79,12 @@ class PayFeeChallan extends Component
             $this->receiving_account_id = $cashier->id;
         }
 
+        // Discounts already applied to this challan on a previous visit (read-only)
+        $this->existing_discounts = $this->challan->discounts()
+            ->with('discountType')
+            ->get()
+            ->toArray();
+
         // Other pending challans of same student
         $this->other_challans = Challan::where('student_id', $this->student->id)
             ->where('id', '!=', $this->challan_id)
@@ -91,6 +101,16 @@ class PayFeeChallan extends Component
         if (in_array($field, ['discount', 'current_payment'])) {
             $payable  = (float)($this->line_items[$index]['payable'] ?? 0);
             $discount = (float)($this->line_items[$index]['discount'] ?? 0);
+
+            // Clamp the raw discount itself (not just its display) to this
+            // line's own payable amount -- otherwise an over-entered discount
+            // still flows unchanged into recalculateTotals() and gets persisted
+            // as a ChallanDiscount write-off bigger than the fee ever was.
+            if ($discount > $payable) {
+                $discount = $payable;
+                $this->line_items[$index]['discount'] = $discount;
+            }
+
             $afterDiscount = max(0, $payable - $discount);
             
             $currentPaymentInput = $this->line_items[$index]['current_payment'];
@@ -109,12 +129,52 @@ class PayFeeChallan extends Component
         $this->recalculateTotals();
     }
 
+    public function addNamedDiscount()
+    {
+        $this->named_discounts[] = [
+            'discount_type_id' => '',
+            'percent'          => '',
+            'amount'           => 0.0,
+            'reason'           => '',
+        ];
+    }
+
+    public function removeNamedDiscount($index)
+    {
+        unset($this->named_discounts[$index]);
+        $this->named_discounts = array_values($this->named_discounts);
+        $this->recalculateTotals();
+    }
+
+    public function updatedNamedDiscounts($value, $key)
+    {
+        [$index, $field] = explode('.', $key, 2);
+        $index = (int) $index;
+
+        // For a percentage-type discount, recompute the amount from the entered
+        // percent against total_payable (the pre-discount fee total) whenever the
+        // chosen type or the percent value changes.
+        if (in_array($field, ['discount_type_id', 'percent'])) {
+            $discountTypeId = $this->named_discounts[$index]['discount_type_id'] ?? null;
+            $discountType   = $discountTypeId ? DiscountType::find($discountTypeId) : null;
+
+            if ($discountType && $discountType->type === 'percent') {
+                $percent = (float) ($this->named_discounts[$index]['percent'] ?: 0);
+                $this->named_discounts[$index]['amount'] = round($this->total_payable * $percent / 100, 2);
+            }
+        }
+
+        $this->recalculateTotals();
+    }
+
     protected function recalculateTotals()
     {
         $this->total_payable        = array_sum(array_column($this->line_items, 'payable'));
-        $this->total_discount       = array_sum(array_column($this->line_items, 'discount'));
-        $this->total_after_discount = array_sum(array_column($this->line_items, 'after_discount'));
-        
+        $lineItemDiscount           = array_sum(array_column($this->line_items, 'discount'));
+        $namedDiscount              = array_sum(array_map(fn($d) => (float) ($d['amount'] ?: 0), $this->named_discounts));
+        $this->total_discount       = $lineItemDiscount + $namedDiscount;
+        $this->total_after_discount = $this->total_payable - $this->total_discount;
+
         $paid = 0;
         foreach ($this->line_items as $item) {
             $val = $item['current_payment'] ?? 0;
@@ -140,90 +200,42 @@ class PayFeeChallan extends Component
             return;
         }
 
-        DB::transaction(function () {
-            $tenantId = session('tenant_id') ?? Auth::user()->tenant_id;
-            $paidAmount     = $this->total_paid;
-            $discountAmount = $this->total_discount;
-            $receiptNo      = $this->receipt_no ?: ('RCPT-' . strtoupper($this->challan->month) . '-' . $this->challan->year . '-' . $this->challan->id);
+        // Per-line current-payment inputs are only clamped against that line's own
+        // discount, not the named/challan-level discounts added above — so a named
+        // discount can bring the total below what the entered line payments sum to.
+        // Catch that here instead of silently overcharging.
+        if ($this->total_paid > $this->total_after_discount) {
+            $this->addError('named_discounts', 'Total payment cannot exceed the amount after discounts. Please adjust the current payment or discount amounts.');
+            return;
+        }
 
-            // Update challan
-            $this->challan->update([
-                'status'               => ($paidAmount >= $this->total_after_discount) ? 'paid' : 'partial',
-                'paid_amount'          => $paidAmount,
-                'discount_amount'      => $discountAmount,
-                'receiving_account_id' => $this->receiving_account_id,
-                'discount_account_id'  => $this->discount_account_id ?: null,
-                'paid_date'            => $this->paid_date,
-                'receipt_no'           => $receiptNo,
-                'challan_notes'        => $this->challan_notes,
-                'paid_by'              => Auth::id(),
+        // Nothing entered at all -- don't let a click with no payment and no
+        // discount still flip the challan's status and consume a receipt number.
+        if ($this->total_paid <= 0 && $this->total_discount <= 0) {
+            $this->addError('total_paid', 'Enter a payment amount or a discount before submitting.');
+            return;
+        }
+
+        try {
+            app(FeeService::class)->collectChallanPayment($this->challan, [
+                'tenant_id'             => session('tenant_id') ?? Auth::user()->tenant_id,
+                'receiving_account_id'  => $this->receiving_account_id,
+                'discount_account_id'   => $this->discount_account_id,
+                'paid_date'             => $this->paid_date,
+                'due_date'              => $this->due_date,
+                'receipt_no'            => $this->receipt_no,
+                'challan_notes'         => $this->challan_notes,
+                'paid_by'               => Auth::id(),
+                'line_items'            => $this->line_items,
+                'named_discounts'       => $this->named_discounts,
+                'total_paid'            => $this->total_paid,
+                'total_discount'        => $this->total_discount,
+                'total_after_discount'  => $this->total_after_discount,
             ]);
-
-            // Create Journal Entry
-            $entry = JournalEntry::create([
-                'tenant_id'        => $tenantId,
-                'campus_id'        => $this->student->campus_id,
-                'transaction_date' => $this->paid_date,
-                'voucher_no'       => $receiptNo,
-                'narration'        => "Fee Received: {$this->student->first_name} {$this->student->last_name} | {$this->challan->challan_no}" . ($this->challan_notes ? " | {$this->challan_notes}" : ''),
-                'created_by'       => Auth::id(),
-            ]);
-
-            // Debit: Receiving Account (Cash/Bank)
-            if ($paidAmount > 0) {
-                JournalItem::create([
-                    'journal_entry_id' => $entry->id,
-                    'gl_account_id'    => $this->receiving_account_id,
-                    'debit'            => $paidAmount,
-                    'credit'           => 0,
-                    'item_memo'        => "Fee received from {$this->student->admission_no}",
-                ]);
-            }
-
-            // Debit: Discount/Bad Debt Account
-            if ($discountAmount > 0 && $this->discount_account_id) {
-                JournalItem::create([
-                    'journal_entry_id' => $entry->id,
-                    'gl_account_id'    => $this->discount_account_id,
-                    'debit'            => $discountAmount,
-                    'credit'           => 0,
-                    'item_memo'        => "Discount/Write-off for {$this->student->admission_no}",
-                ]);
-            }
-
-            // Credit: Specific Income Accounts based on Fee Particulars
-            foreach ($this->line_items as $item) {
-                $currentPayment = $item['current_payment'] === '' ? 0 : (float)$item['current_payment'];
-                $discountAmount = $item['discount'] === '' ? 0 : (float)$item['discount'];
-                $itemTotal = $currentPayment + $discountAmount;
-                
-                if ($itemTotal > 0) {
-                    // Try to find exact income account matching the fee particular
-                    $incomeAccount = GLAccount::where('tenant_id', $tenantId)
-                        ->where('name', $item['name'])
-                        ->first();
-                        
-                    // Fallback to Fee Receivable or any Revenue account
-                    if (!$incomeAccount) {
-                        $incomeAccount = GLAccount::where('tenant_id', $tenantId)
-                            ->where(function($q) {
-                                $q->where('name', 'like', '%Receivable%')
-                                  ->orWhere('name', 'like', '%Revenue%');
-                            })->first();
-                    }
-
-                    if ($incomeAccount) {
-                        JournalItem::create([
-                            'journal_entry_id' => $entry->id,
-                            'gl_account_id'    => $incomeAccount->id,
-                            'debit'            => 0,
-                            'credit'           => $itemTotal,
-                            'item_memo'        => "{$item['name']} for {$this->student->admission_no}",
-                        ]);
-                    }
-                }
-            }
-        });
+        } catch (\RuntimeException $e) {
+            $this->addError('total_paid', $e->getMessage());
+            return;
+        }
 
         session()->flash('success', 'Payment recorded successfully!');
         return redirect()->route('finance.pay-print-challans');
@@ -240,6 +252,7 @@ class PayFeeChallan extends Component
                 ->where('is_inactive', 0)
                 ->where('type', 'expense')
                 ->get(),
+            'discount_types' => DiscountType::where('is_active', true)->get(),
         ])->layout('layouts.app');
     }
 }

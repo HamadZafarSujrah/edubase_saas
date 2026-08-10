@@ -121,29 +121,21 @@
                 </div>
                 <div class="card-body p-4 pt-3">
                     <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold tiny">Group / Discipline</label>
-                            <select wire:model="group_discipline" class="form-select bg-light border-0">
-                                <option value="">Select</option>
-                                <option value="Science">Science</option>
-                                <option value="Arts">Arts</option>
-                                <option value="Commerce">Commerce</option>
-                                <option value="None">None</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold tiny">House</label>
-                            <input type="text" wire:model="house" class="form-control bg-light border-0">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold tiny">Current Status</label>
-                            <select wire:model="current_status" class="form-select bg-light border-0">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Pending">Pending</option>
+                            <select wire:model="house_id" class="form-select bg-light border-0">
+                                <option value="">No House</option>
+                                @foreach($houses as $h) <option value="{{ $h->id }}">{{ $h->name }}</option> @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold tiny">Current Status</label>
+                            <select wire:model="is_active" class="form-select bg-light border-0">
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label small fw-bold tiny">Session</label>
                             <select wire:model="session_id" class="form-select bg-light border-0">
                                 @foreach($sessions as $s) <option value="{{ $s->id }}">{{ $s->name }}</option> @endforeach
@@ -395,9 +387,26 @@
                     </div>
                 </div>
 
+                <!-- EXISTING ATTACHMENTS (READ-ONLY, EDIT MODE) -->
+                @if($editing && count($existing_documents) > 0)
+                    <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+                        <div class="card-header bg-secondary text-white py-2 small fw-bold border-0 text-center text-uppercase">Existing Attachments on File</div>
+                        <div class="list-group list-group-flush">
+                            @foreach($existing_documents as $doc)
+                                <a href="{{ $doc['url'] }}" target="_blank" class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-paperclip me-2 text-muted"></i>{{ $doc['title'] }}</span>
+                                    <i class="fas fa-external-link-alt tiny text-muted"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <!-- ATTACHMENTS (DYNAMIC ROWS) -->
                 <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
-                    <div class="card-header bg-danger text-white py-2 small fw-bold border-0 text-center text-uppercase">Enrollment Attachments</div>
+                    <div class="card-header bg-danger text-white py-2 small fw-bold border-0 text-center text-uppercase">
+                        {{ $editing ? 'Add New Attachments' : 'Enrollment Attachments' }}
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0 align-middle">
                             <thead class="bg-primary text-white tiny fw-bold text-uppercase text-center">

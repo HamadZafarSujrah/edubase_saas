@@ -8,7 +8,7 @@
         <div class="d-flex align-items-center gap-3">
             <div class="text-end d-none d-md-block">
                 <p class="fw-bold mb-0 text-dark">{{ auth()->user()->name }}</p>
-                <span class="badge bg-soft-primary text-primary px-3 rounded-pill">Administrator</span>
+                <span class="badge bg-soft-primary text-primary px-3 rounded-pill">{{ auth()->user()->role ?? 'Administrator' }}</span>
             </div>
             <div class="bg-primary text-white p-3 rounded-circle shadow-sm">
                 <i class="fas fa-user-shield fs-4"></i>
@@ -22,10 +22,10 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient-primary text-white overflow-hidden position-relative">
                 <div class="card-body p-4 position-relative z-1">
-                    <p class="text-white text-opacity-75 small fw-bold mb-1 uppercase letter-spacing-1">Total Students</p>
-                    <h2 class="display-6 fw-bold mb-0">1,248</h2>
+                    <p class="text-white text-opacity-75 small fw-bold mb-1 uppercase letter-spacing-1">Active Students</p>
+                    <h2 class="display-6 fw-bold mb-0">{{ number_format($totalActiveStudents) }}</h2>
                     <div class="mt-3 small text-white text-opacity-75">
-                        <i class="fas fa-arrow-up me-1"></i> 12% from last month
+                        <i class="fas fa-user-graduate me-1"></i> Currently enrolled
                     </div>
                 </div>
                 <i class="fas fa-user-graduate position-absolute end-0 bottom-0 p-3 fs-1 opacity-25"></i>
@@ -36,24 +36,32 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden position-relative border-bottom border-4 border-success">
                 <div class="card-body p-4">
-                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">Monthly Collections</p>
-                    <h2 class="display-6 fw-bold mb-0 text-dark">PKR 850k</h2>
-                    <div class="mt-3 small text-success">
-                        <i class="fas fa-check-circle me-1"></i> Target Achieved
+                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">This Month's Collection</p>
+                    <h2 class="display-6 fw-bold mb-0 text-dark">{{ $monthlyCollected >= 1000 ? number_format($monthlyCollected / 1000, 0) . 'k' : number_format($monthlyCollected) }}</h2>
+                    <div class="mt-3 small {{ $collectionRate === null ? 'text-muted' : ($collectionRate >= 75 ? 'text-success' : ($collectionRate >= 50 ? 'text-warning' : 'text-danger')) }}">
+                        @if($collectionRate === null)
+                            <i class="fas fa-info-circle me-1"></i> No challans billed yet
+                        @else
+                            <i class="fas fa-check-circle me-1"></i> {{ $collectionRate }}% of billed collected
+                        @endif
                     </div>
                 </div>
                 <i class="fas fa-money-bill-wave position-absolute end-0 bottom-0 p-3 fs-1 text-success opacity-10"></i>
             </div>
         </div>
 
-        <!-- Pending Challans Card -->
+        <!-- Today's Attendance Card -->
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden position-relative border-bottom border-4 border-warning">
                 <div class="card-body p-4">
-                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">Active Campuses</p>
-                    <h2 class="display-6 fw-bold mb-0 text-dark">04</h2>
-                    <div class="mt-3 small text-warning font-mono">
-                        System Online
+                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">Today's Attendance</p>
+                    <h2 class="display-6 fw-bold mb-0 text-dark">{{ $attendanceRate === null ? '—' : $attendanceRate . '%' }}</h2>
+                    <div class="mt-3 small {{ $attendanceRate === null ? 'text-muted' : 'text-warning' }}">
+                        @if($attendanceRate === null)
+                            <i class="fas fa-exclamation-circle me-1"></i> Not yet taken today
+                        @else
+                            <i class="fas fa-check-circle me-1"></i> {{ number_format($todayMarked) }} student(s) marked
+                        @endif
                     </div>
                 </div>
                 <i class="fas fa-school position-absolute end-0 bottom-0 p-3 fs-1 text-warning opacity-10"></i>
@@ -64,8 +72,8 @@
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden position-relative border-bottom border-4 border-info">
                 <div class="card-body p-4">
-                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">Total Staff</p>
-                    <h2 class="display-6 fw-bold mb-0 text-dark">86</h2>
+                    <p class="text-muted small fw-bold mb-1 uppercase letter-spacing-1">Active Employees</p>
+                    <h2 class="display-6 fw-bold mb-0 text-dark">{{ number_format($totalActiveEmployees) }}</h2>
                     <div class="mt-3 small text-info">
                         Active Personnel
                     </div>
@@ -75,7 +83,7 @@
         </div>
     </div>
 
-    <!-- Second Row: Quick Actions & Recent Activity -->
+    <!-- Second Row: Quick Actions & Pending Approvals -->
     <div class="row g-4">
         <!-- Quick Actions Grid -->
         <div class="col-md-8">
@@ -104,12 +112,12 @@
                             </a>
                         </div>
                         <div class="col-md-4">
-                            <a href="{{ route('finance.generate-challan') }}" class="d-block text-decoration-none group p-4 border rounded-4 text-center bg-light-hover transition-all shadow-sm-hover border-light border-2">
+                            <a href="{{ route('attendance.take') }}" class="d-block text-decoration-none group p-4 border rounded-4 text-center bg-light-hover transition-all shadow-sm-hover border-light border-2">
                                 <div class="bg-soft-warning text-warning p-3 rounded-circle d-inline-block mb-3">
-                                    <i class="fas fa-file-invoice-dollar fs-4"></i>
+                                    <i class="fas fa-hand-paper fs-4"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1">Fee Challan</h6>
-                                <p class="small text-muted mb-0">Generate monthly fees</p>
+                                <h6 class="fw-bold text-dark mb-1">Take Attendance</h6>
+                                <p class="small text-muted mb-0">Mark today's attendance</p>
                             </a>
                         </div>
                     </div>
@@ -117,42 +125,76 @@
                     <!-- Divider -->
                     <div class="my-4 border-bottom opacity-10"></div>
 
-                    <!-- Chart Placeholder -->
-                    <div class="bg-light rounded-4 p-5 text-center">
-                        <i class="fas fa-chart-line fs-1 text-muted opacity-25 mb-3 d-block"></i>
-                        <h6 class="text-muted fw-bold">Financial Growth Analytics</h6>
-                        <p class="small text-muted">Analytics are initializing for the new academic session.</p>
+                    <!-- Fee Collection Trend Chart -->
+                    <div class="viz-root">
+                        <h6 class="text-muted fw-bold mb-3">Fee Collection Trend — Last 6 Months</h6>
+                        @php
+                            $chartW = 640; $barAreaH = 120; $baselineY = 150;
+                            $maxAmount = max(1, max(array_column($collectionTrend, 'amount')));
+                            $n = max(1, count($collectionTrend));
+                            $slot = $chartW / $n;
+                            $barW = min(56, $slot - 16);
+                        @endphp
+                        @if($maxAmount <= 1)
+                            <div class="text-center py-4 text-muted small">No fee collection recorded in the last 6 months yet.</div>
+                        @else
+                            <svg viewBox="0 0 {{ $chartW }} 190" class="w-100" style="max-height: 220px;" role="img" aria-label="Fee collection trend, last 6 months">
+                                <line x1="0" y1="{{ $baselineY }}" x2="{{ $chartW }}" y2="{{ $baselineY }}" stroke="#c3c2b7" stroke-width="1" />
+                                @foreach($collectionTrend as $i => $point)
+                                    @php
+                                        $barH = max(($point['amount'] / $maxAmount) * $barAreaH, $point['amount'] > 0 ? 3 : 0);
+                                        $x = $i * $slot + ($slot - $barW) / 2;
+                                        $y = $baselineY - $barH;
+                                    @endphp
+                                    <g>
+                                        <rect x="{{ $x }}" y="{{ $y }}" width="{{ $barW }}" height="{{ $barH }}" rx="4" fill="#2a78d6">
+                                            <title>{{ $point['label'] }}: PKR {{ number_format($point['amount'], 0) }}</title>
+                                        </rect>
+                                        @if($point['amount'] > 0)
+                                            <text x="{{ $x + $barW / 2 }}" y="{{ $y - 8 }}" text-anchor="middle" font-size="11" fill="#52514e">{{ $point['amount'] >= 1000 ? number_format($point['amount'] / 1000, 0) . 'k' : number_format($point['amount']) }}</text>
+                                        @endif
+                                        <text x="{{ $x + $barW / 2 }}" y="{{ $baselineY + 18 }}" text-anchor="middle" font-size="11" fill="#898781">{{ $point['label'] }}</text>
+                                    </g>
+                                @endforeach
+                            </svg>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- System Notifications / Logs -->
+        <!-- Pending Approvals & Alerts -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white overflow-hidden">
                 <div class="card-header bg-dark text-white p-4 border-0">
-                    <h5 class="fw-bold mb-0">Security Logs</h5>
+                    <h5 class="fw-bold mb-0"><i class="fas fa-bell me-2"></i>Pending Approvals</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                        <div class="list-group-item p-4 border-0 border-bottom">
-                            <div class="d-flex w-100 justify-content-between mb-2">
-                                <h6 class="mb-1 fw-bold text-primary">System Upgrade</h6>
-                                <small class="text-muted">Just Now</small>
+                        <a href="{{ route('hrm.leave-approvals') }}" class="list-group-item p-4 border-0 border-bottom d-flex justify-content-between align-items-center text-decoration-none">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark"><i class="fas fa-calendar-minus me-2 text-warning"></i>Leave Requests</h6>
+                                <p class="mb-0 small text-muted">Awaiting your decision</p>
                             </div>
-                            <p class="mb-1 small text-dark">Successfully migrated to Laravel 13 & PHP 8.3.</p>
-                            <span class="badge bg-success-soft text-success rounded-pill px-2 py-1 x-small">STABLE</span>
-                        </div>
-                        <div class="list-group-item p-4 border-0 border-bottom bg-light">
-                            <div class="d-flex w-100 justify-content-between mb-2">
-                                <h6 class="mb-1 fw-bold text-dark">Tenant Sync</h6>
-                                <small class="text-muted">1hr ago</small>
+                            <span class="badge {{ $pendingLeaveRequests > 0 ? 'bg-warning' : 'bg-secondary' }} rounded-pill px-3 py-2 fs-6">{{ $pendingLeaveRequests }}</span>
+                        </a>
+                        <a href="{{ route('hrm.salary-plan-approvals') }}" class="list-group-item p-4 border-0 border-bottom d-flex justify-content-between align-items-center text-decoration-none">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark"><i class="fas fa-file-signature me-2 text-warning"></i>Salary Plans</h6>
+                                <p class="mb-0 small text-muted">Awaiting approval</p>
                             </div>
-                            <p class="mb-1 small text-muted">Institution data synchronized with master node.</p>
-                        </div>
+                            <span class="badge {{ $pendingSalaryApprovals > 0 ? 'bg-warning' : 'bg-secondary' }} rounded-pill px-3 py-2 fs-6">{{ $pendingSalaryApprovals }}</span>
+                        </a>
+                        <a href="{{ route('general.complaints') }}" class="list-group-item p-4 border-0 border-bottom d-flex justify-content-between align-items-center text-decoration-none">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark"><i class="fas fa-exclamation-circle me-2 text-danger"></i>Open Complaints</h6>
+                                <p class="mb-0 small text-muted">Open or in progress</p>
+                            </div>
+                            <span class="badge {{ $openComplaints > 0 ? 'bg-danger' : 'bg-secondary' }} rounded-pill px-3 py-2 fs-6">{{ $openComplaints }}</span>
+                        </a>
                         <div class="list-group-item p-4 border-0">
-                            <div class="d-none d-lg-block p-4 text-center">
-                                <button class="btn btn-outline-primary btn-sm rounded-pill px-4">View All Logs</button>
+                            <div class="text-center">
+                                <button class="btn btn-outline-primary btn-sm rounded-pill px-4" disabled>All caught up when zero</button>
                             </div>
                         </div>
                     </div>

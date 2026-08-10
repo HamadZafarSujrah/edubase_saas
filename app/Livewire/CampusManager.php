@@ -89,6 +89,15 @@ class CampusManager extends Component
 
         $this->validate();
 
+        if (!$this->campus_id) {
+            $tenant = \App\Models\Tenant::find(session('tenant_id') ?? auth()->user()->tenant_id);
+            if ($tenant && $tenant->wouldExceedPlanLimit('campuses', Campus::count())) {
+                session()->flash('error', "Your institution's plan campus limit has been reached. Please upgrade your plan to add more campuses.");
+                $this->closeModal();
+                return;
+            }
+        }
+
         try {
             Campus::updateOrCreate(
                 ['id' => $this->campus_id],

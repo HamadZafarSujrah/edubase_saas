@@ -6,6 +6,8 @@ use Livewire\Component;
 use App\Models\Academic\SchoolClass;
 use App\Models\Academic\Section;
 use Livewire\WithPagination;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ClassManager extends Component
 {
@@ -68,7 +70,7 @@ class ClassManager extends Component
             ['id' => $this->class_id],
             [
                 'name' => $this->name,
-                'numeric_value' => $this->numeric_value,
+                'numeric_value' => $this->numeric_value === '' ? null : $this->numeric_value,
                 'is_active' => $this->is_active
             ]
         );
@@ -107,10 +109,19 @@ class ClassManager extends Component
 
     public function saveSection()
     {
+        $tenantId = session('tenant_id') ?? Auth::user()->tenant_id;
+
         $this->validate([
-            'section_name' => 'required|string|max:50',
+            'section_name' => [
+                'required', 'string', 'max:50',
+                Rule::unique('sections', 'name')
+                    ->where('tenant_id', $tenantId)
+                    ->where('school_class_id', $this->managingSectionsFor->id),
+            ],
             'room_number' => 'nullable|string|max:50',
             'capacity' => 'required|integer|min:1',
+        ], [
+            'section_name.unique' => 'This class already has a section named ":input".',
         ]);
 
         Section::create([

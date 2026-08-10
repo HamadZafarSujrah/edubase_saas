@@ -15,9 +15,17 @@
                         @foreach($months as $m) <option value="{{ $m }}">{{ strtoupper($m) }}</option> @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="tiny fw-bold text-muted ps-1">Year</label>
                     <input type="number" wire:model.live="year" class="form-control border-0 bg-light rounded-3 shadow-sm" placeholder="Year">
+                </div>
+                <div class="col-md-2">
+                    <label class="tiny fw-bold text-muted ps-1">Student</label>
+                    <select wire:model.live="student_status_filter" class="form-select border-0 bg-light rounded-3 shadow-sm">
+                        <option value="active">Active</option>
+                        <option value="inactive">Alumni / Inactive</option>
+                        <option value="all">All</option>
+                    </select>
                 </div>
                 <div class="col-md-2 d-flex gap-2">
                     <a href="{{ route('finance.generate-challans') }}" class="btn btn-primary btn-sm rounded-3 px-3 flex-fill">
@@ -50,11 +58,6 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr class="tiny fw-bold text-uppercase text-muted border-bottom">
-                        <th class="ps-4" width="40px">
-                            <div class="form-check">
-                                <input type="checkbox" wire:model.live="selectAll" class="form-check-input">
-                            </div>
-                        </th>
                         <th>Student Name / Family</th>
                         <th>Class / Section</th>
                         <th>Bill #</th>
@@ -67,11 +70,6 @@
                 <tbody class="bg-white">
                     @forelse($challans as $challan)
                         <tr>
-                            <td class="ps-4">
-                                <div class="form-check">
-                                    <input type="checkbox" wire:model.live="selected_challans" value="{{ $challan->id }}" class="form-check-input">
-                                </div>
-                            </td>
                             <td>
                                 <div class="fw-bold small text-dark">{{ $challan->student->first_name }} {{ $challan->student->last_name }}</div>
                                 <div class="tiny text-muted">Adm: {{ $challan->student->admission_no }} | Father: {{ $challan->student->father_name }}</div>

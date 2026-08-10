@@ -20,6 +20,10 @@ class StudentFeePlanList extends Component
     public $fee_plan_search = '';
     public $current_tenant_id;
     public $mode = 'create';
+    // 'active' (default) | 'inactive' | 'all' -- lets alumni/non-enrolled
+    // students' fee plans be managed deliberately (documented as its own
+    // workflow) instead of always being mixed in with enrolled students.
+    public $status_filter = 'active';
 
     public function mount() {
         $this->current_tenant_id = session('tenant_id') ?? auth()->user()->tenant_id;
@@ -28,9 +32,10 @@ class StudentFeePlanList extends Component
         }
     }
 
-    public function updatingSearch()    { $this->resetPage(); }
-    public function updatingClassId()   { $this->resetPage(); }
-    public function updatingSectionId() { $this->resetPage(); }
+    public function updatingSearch()       { $this->resetPage(); }
+    public function updatingClassId()      { $this->resetPage(); }
+    public function updatingSectionId()    { $this->resetPage(); }
+    public function updatingStatusFilter() { $this->resetPage(); }
 
     public function deleteFeePlan($studentId)
     {
@@ -66,6 +71,7 @@ class StudentFeePlanList extends Component
 
         if ($this->class_id)   $query->where('school_class_id', $this->class_id);
         if ($this->section_id) $query->where('section_id', $this->section_id);
+        if ($this->status_filter !== 'all') $query->where('is_active', $this->status_filter === 'active');
 
         if ($this->fee_plan_search) {
             $query->whereHas('feePlan', function ($q) {

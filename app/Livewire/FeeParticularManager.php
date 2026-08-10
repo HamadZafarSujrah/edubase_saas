@@ -4,13 +4,28 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Finance\FeeParticular;
+use Illuminate\Validation\Rule;
 
 class FeeParticularManager extends Component
 {
     public $particular_name, $editing_id;
 
-    protected $rules = [
-        'particular_name' => 'required|string|max:100',
+    protected function rules(): array
+    {
+        $tenantId = session('tenant_id') ?? auth()->user()->tenant_id;
+
+        return [
+            'particular_name' => [
+                'required', 'string', 'max:100',
+                Rule::unique('fee_particulars', 'name')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($this->editing_id),
+            ],
+        ];
+    }
+
+    protected $messages = [
+        'particular_name.unique' => 'A fee particular with this name already exists.',
     ];
 
     public function render()
@@ -45,7 +60,11 @@ class FeeParticularManager extends Component
 
     public function delete($id)
     {
-        FeeParticular::findOrFail($id)->delete();
-        session()->flash('message', 'Deleted successfully.');
+        try {
+            FeeParticular::findOrFail($id)->delete();
+            session()->flash('message', 'Deleted successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            session()->flash('error', 'This fee particular is still mapped to one or more fee plans and cannot be deleted.');
+        }
     }
 }

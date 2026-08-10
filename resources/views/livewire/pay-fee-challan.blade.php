@@ -195,8 +195,90 @@
                         </table>
                     </div>
 
+                    {{-- Named Discounts (sibling, merit, scholarship, ...) --}}
+                    <div class="card border-0 rounded-3 overflow-hidden shadow-sm mb-4">
+                        <div class="card-header text-center text-white fw-bold py-2" style="background:#0d9488; font-size:0.82rem;">
+                            <i class="fas fa-percent me-1"></i> Named Discounts
+                        </div>
+                        <div class="card-body p-3">
+
+                            @error('named_discounts')
+                                <div class="alert alert-danger py-2 small"><i class="fas fa-exclamation-circle me-1"></i>{{ $message }}</div>
+                            @enderror
+
+                            @if(count($existing_discounts) > 0)
+                                <div class="mb-3">
+                                    <div class="small fw-bold text-muted mb-1">Already applied to this challan</div>
+                                    <table class="table table-sm table-bordered mb-0" style="font-size:0.8rem;">
+                                        <thead class="table-light">
+                                            <tr><th>Discount Type</th><th>Amount</th><th>Reason</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($existing_discounts as $ed)
+                                                <tr>
+                                                    <td>{{ $ed['discount_type']['name'] ?? '—' }}</td>
+                                                    <td class="text-danger fw-bold">{{ number_format($ed['amount'], 2) }}</td>
+                                                    <td class="text-muted">{{ $ed['reason'] ?? '—' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+
+                            @if($challan->status !== 'paid')
+                                @foreach($named_discounts as $i => $discount)
+                                    <div class="row g-2 mb-2 align-items-end">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Discount Type</label>
+                                            <select wire:model.live="named_discounts.{{ $i }}.discount_type_id" class="form-select form-select-sm border-0 bg-light shadow-sm">
+                                                <option value="">Select discount type</option>
+                                                @foreach($discount_types as $dt)
+                                                    <option value="{{ $dt->id }}">{{ $dt->name }} ({{ $dt->type === 'percent' ? '%' : 'Fixed' }})</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        @php($selectedType = $discount_types->firstWhere('id', (int) ($discount['discount_type_id'] ?: 0)))
+                                        @if($selectedType && $selectedType->type === 'percent')
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-bold">Percent</label>
+                                                <input type="number" step="0.01" min="0" max="100"
+                                                       wire:model.live="named_discounts.{{ $i }}.percent"
+                                                       class="form-control form-control-sm border-0 bg-light shadow-sm">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-bold">Amount</label>
+                                                <div class="form-control form-control-sm bg-light border-0 fw-bold text-muted">{{ number_format($discount['amount'], 2) }}</div>
+                                            </div>
+                                        @else
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Amount</label>
+                                                <input type="number" step="0.01" min="0"
+                                                       wire:model.live="named_discounts.{{ $i }}.amount"
+                                                       class="form-control form-control-sm border-0 bg-light shadow-sm">
+                                            </div>
+                                        @endif
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold">Reason (optional)</label>
+                                            <input type="text" wire:model.live="named_discounts.{{ $i }}.reason" class="form-control form-control-sm border-0 bg-light shadow-sm">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <button wire:click="removeNamedDiscount({{ $i }})" class="btn btn-outline-danger btn-sm rounded-circle"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                                <button wire:click="addNamedDiscount" class="btn btn-outline-primary btn-sm rounded-pill px-3 mt-1">
+                                    <i class="fas fa-plus me-1"></i> Add Discount
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
                     {{-- Action Buttons --}}
                     @if($challan->status !== 'paid')
+                        @error('total_paid')
+                            <div class="alert alert-danger border-0 shadow-sm mb-3"><i class="fas fa-exclamation-circle me-2"></i>{{ $message }}</div>
+                        @enderror
                         <div class="d-flex gap-3">
                             <button wire:click="submit" wire:loading.attr="disabled"
                                     class="btn btn-success px-5 py-2 fw-bold rounded-3 shadow-sm">

@@ -6,6 +6,9 @@
                 @if (session()->has('message'))
                     <span class="text-success small fw-bold animate__animated animate__fadeOut animate__delay-2s">{{ session('message') }}</span>
                 @endif
+                @if (session()->has('error'))
+                    <span class="text-danger small fw-bold">{{ session('error') }}</span>
+                @endif
                 <button wire:click="saveAll" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm">
                     <i class="fas fa-save me-1"></i> Save All Changes
                 </button>

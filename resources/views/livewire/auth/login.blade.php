@@ -11,6 +11,17 @@
                     <p class="text-muted small">Academic Management System <span class="badge bg-soft-success text-success px-2 py-1 x-small ms-1">v3.0</span></p>
                 </div>
 
+                @if (session('success'))
+                    <div class="alert alert-success border-0 shadow-sm small mb-4">
+                        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                    </div>
+                @endif
+                @if (session('error'))
+                    <div class="alert alert-danger border-0 shadow-sm small mb-4">
+                        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                    </div>
+                @endif
+
                 <!-- Login Form -->
                 <form wire:submit.prevent="login">
                     <!-- Institution Code -->
@@ -67,7 +78,11 @@
                     </button>
                 </form>
 
-                <div class="text-center mt-5">
+                <div class="text-center mt-4">
+                    <a href="{{ route('register-school') }}" class="text-primary text-decoration-none small fw-bold">New school? Register here</a>
+                </div>
+
+                <div class="text-center mt-4">
                     <p class="text-muted small mb-0">&copy; {{ date('Y') }} Al-hikma Solutions. All rights reserved.</p>
                 </div>
             </div>

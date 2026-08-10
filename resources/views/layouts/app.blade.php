@@ -48,6 +48,12 @@
             background-color: #dc3545; /* Red highlight on hover */
             color: white;
         }
+        @if(isset($currentTenant) && $currentTenant->primary_color)
+        .main-navbar .navbar-nav .nav-link:hover,
+        .main-navbar .navbar-nav .nav-item.show > .nav-link {
+            background-color: {{ $currentTenant->primary_color }} !important;
+        }
+        @endif
 
         /* Dropdown Styling */
         .dropdown-menu {
@@ -109,7 +115,16 @@
             <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                 <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
             </button>
-            
+
+            @if(isset($currentTenant))
+                <a class="navbar-brand d-flex align-items-center text-white ms-2" href="{{ route('dashboard') }}">
+                    @if($currentTenant->logo_url)
+                        <img src="{{ $currentTenant->logo_url }}" alt="{{ $currentTenant->name }}" style="height: 32px; margin-right: 10px;">
+                    @endif
+                    <span class="fw-bold small">{{ $currentTenant->name }}</span>
+                </a>
+            @endif
+
             <div class="collapse navbar-collapse" id="mainNav">
                 
                 <!-- Left Side: Management Modules -->
@@ -130,15 +145,15 @@
                             <li><a class="dropdown-item" href="/view-edit-fee-plans"><i class="fas fa-edit text-warning"></i> View/Edit Student Fee Plans</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/generate-challans"><i class="fas fa-cog"></i> Generate Challan</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Generate Challan Installment Wise</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-plus-circle"></i> Add Amount in Generated Challan</a></li>
+                            <li><a class="dropdown-item" href="{{ route('finance.generate-installment-challans') }}"><i class="fas fa-cog"></i> Generate Challan Installment Wise</a></li>
+                            <li><a class="dropdown-item" href="{{ route('finance.pay-print-challans') }}"><i class="fas fa-plus-circle"></i> Add Amount in Generated Challan</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/pay-print-challans"><i class="fas fa-print"></i> Pay or Print Fee Challans</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-money-bill-wave"></i> Direct Payment</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-users"></i> Familywise Payment</a></li>
+                            <li><a class="dropdown-item" href="{{ route('finance.direct-payment') }}"><i class="fas fa-money-bill-wave"></i> Direct Payment</a></li>
+                            <li><a class="dropdown-item" href="{{ route('finance.family-payment') }}"><i class="fas fa-users"></i> Familywise Payment</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/paid-challans"><i class="fas fa-check-circle"></i> Paid Challans</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-minus"></i> Challan Discounts</a></li>
+                            <li><a class="dropdown-item" href="/discount-types"><i class="fas fa-minus"></i> Challan Discounts</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-history"></i> Payment History</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle"></i> Detail Fee Report</a></li>
@@ -155,17 +170,17 @@
                             <i class="fas fa-plus me-1 text-warning"></i> Extras
                         </a>
                         <ul class="dropdown-menu shadow-lg">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-print"></i> Print Fee Reminder</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-friends"></i> All Students</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-exchange-alt"></i> Batch Transfer/Promote Students</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-paper-plane"></i> Print Certificates or Date Sheets</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-clipboard-list"></i> Certificates Logs</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-plus"></i> Add Bulk Students</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-check"></i> Students By User</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-qrcode"></i> Student QR Code</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-alt"></i> Date Sheet</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-id-card"></i> Roll No. Slip</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line"></i> Student Yearly Fee Increment</a></li>
+                            <li><a class="dropdown-item" href="/print-fee-reminder"><i class="fas fa-print"></i> Print Fee Reminder</a></li>
+                            <li><a class="dropdown-item" href="/manage-students"><i class="fas fa-user-friends"></i> All Students</a></li>
+                            <li><a class="dropdown-item" href="/batch-promote-students"><i class="fas fa-exchange-alt"></i> Batch Transfer/Promote Students</a></li>
+                            <li><a class="dropdown-item" href="/issue-certificate"><i class="fas fa-paper-plane"></i> Print Certificates</a></li>
+                            <li><a class="dropdown-item" href="/certificates-log"><i class="fas fa-clipboard-list"></i> Certificates Logs</a></li>
+                            <li><a class="dropdown-item" href="/add-bulk-students"><i class="fas fa-user-plus"></i> Add Bulk Students</a></li>
+                            <li><a class="dropdown-item" href="{{ route('students.by-user') }}"><i class="fas fa-user-check"></i> Students By User</a></li>
+                            <li><a class="dropdown-item" href="/student-qr-code"><i class="fas fa-qrcode"></i> Student QR Code</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.date-sheet') }}"><i class="fas fa-calendar-alt"></i> Date Sheet</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.roll-no-slips') }}"><i class="fas fa-id-card"></i> Roll No. Slip</a></li>
+                            <li><a class="dropdown-item" href="/student-fee-increment"><i class="fas fa-chart-line"></i> Student Yearly Fee Increment</a></li>
                         </ul>
                     </li>
 
@@ -183,18 +198,18 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-pencil-alt me-2"></i>Daily Transactions</h6></li>
                             <li><a class="dropdown-item" href="/journal-entry"><i class="fas fa-dollar-sign text-success"></i> Journal Entry</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cut text-danger"></i> Add Expense</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-hand-holding-usd text-success"></i> Add Other Income</a></li>
+                            <li><a class="dropdown-item" href="/add-expense"><i class="fas fa-cut text-danger"></i> Add Expense</a></li>
+                            <li><a class="dropdown-item" href="/add-other-income"><i class="fas fa-hand-holding-usd text-success"></i> Add Other Income</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-search-dollar"></i> Journal Inquiry</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-th"></i> GL Inquiry</a></li>
+                            <li><a class="dropdown-item" href="/journal-inquiry"><i class="fas fa-search-dollar"></i> Journal Inquiry</a></li>
+                            <li><a class="dropdown-item" href="/gl-inquiry"><i class="fas fa-th"></i> GL Inquiry</a></li>
                             <li><a class="dropdown-item" href="/general-ledger"><i class="fas fa-columns"></i> General Ledger</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-exchange-alt"></i> Trial Balance</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-balance-scale"></i> P & L Statement</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-chess-knight"></i> Balance Sheet</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-chess-rook"></i> Cash Report</a></li>
+                            <li><a class="dropdown-item" href="/trial-balance"><i class="fas fa-exchange-alt"></i> Trial Balance</a></li>
+                            <li><a class="dropdown-item" href="/profit-loss"><i class="fas fa-balance-scale"></i> P & L Statement</a></li>
+                            <li><a class="dropdown-item" href="/balance-sheet"><i class="fas fa-chess-knight"></i> Balance Sheet</a></li>
+                            <li><a class="dropdown-item" href="/cash-report"><i class="fas fa-chess-rook"></i> Cash Report</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-times-circle"></i> Voided Transactions</a></li>
+                            <li><a class="dropdown-item text-danger" href="{{ route('finance.voided-transactions') }}"><i class="fas fa-times-circle"></i> Voided Transactions</a></li>
                         </ul>
                     </li>
 
@@ -205,49 +220,95 @@
                         </a>
                         <ul class="dropdown-menu shadow-lg">
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-book-reader me-2"></i>Examination</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-desktop"></i> Add Marks and SMS</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-code"></i> Update Marks and SMS</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> View Marks and SMS</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-book-open"></i> Examination Reports</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.enter-marks') }}"><i class="fas fa-desktop"></i> Add Marks and SMS</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.enter-marks') }}"><i class="fas fa-code"></i> Update Marks and SMS</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.enter-marks') }}"><i class="fas fa-edit"></i> View Marks and SMS</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.reports') }}"><i class="fas fa-book-open"></i> Examination Reports</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-cogs me-2"></i>Exam Setup</h6></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.subjects') }}"><i class="fas fa-book"></i> Manage Subjects</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.grading-policy') }}"><i class="fas fa-percentage"></i> Grading Policy</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.manage') }}"><i class="fas fa-book-reader"></i> Manage Exams</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.standings') }}"><i class="fas fa-medal"></i> Manage Standings</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.academic-dates') }}"><i class="fas fa-calendar-day"></i> Academic Calendar</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.class-shifts') }}"><i class="fas fa-clock"></i> Manage Class Shifts</a></li>
+                            <li><a class="dropdown-item" href="{{ route('exam.sms-templates') }}"><i class="fas fa-comment-dots"></i> SMS Templates</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-user-check me-2"></i>Student Attendance</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-hand-paper"></i> Take Attendance</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye"></i> View/Update Attendance</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye-slash"></i> Absentees</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-alt"></i> Attendance Sheet</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.take') }}"><i class="fas fa-hand-paper"></i> Take / Update Attendance</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.absentees') }}"><i class="fas fa-eye-slash"></i> Absentees</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.sheet-selector') }}"><i class="fas fa-calendar-alt"></i> Attendance Sheet</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-file-medical-alt me-2"></i>Attendance Report</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-plus"></i> Combine Attendance Report</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-alt"></i> Individual Attendance Report</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file"></i> Attendance Summary</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.combine-report') }}"><i class="fas fa-plus"></i> Combine Attendance Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.individual-report') }}"><i class="fas fa-file-alt"></i> Individual Attendance Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('attendance.summary') }}"><i class="fas fa-file"></i> Attendance Summary</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-comment"></i> SMS Blaster</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file"></i> SMS Report</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file"></i> Family SMS Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('sms.blaster') }}"><i class="fas fa-comment"></i> SMS Blaster</a></li>
+                            <li><a class="dropdown-item" href="{{ route('sms.report') }}"><i class="fas fa-file"></i> SMS Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('sms.family-report') }}"><i class="fas fa-file"></i> Family SMS Report</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-bell"></i> App Notification Report</a></li>
                         </ul>
                     </li>
 
                     <!-- HRM -->
+                    @if(!isset($currentTenant) || $currentTenant->hasModule('hrm'))
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="hrmDrop" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-cog me-1 text-warning"></i> HRM
                         </a>
                         <ul class="dropdown-menu shadow-lg">
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-user-tie me-2"></i>Manage Employees</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-laptop-code"></i> Manage Employees</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-laptop-code"></i> Manage Time In/Out</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-sitemap"></i> Assign Classes</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.employees.directory') }}"><i class="fas fa-laptop-code"></i> Manage Employees</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.time-in-out') }}"><i class="fas fa-laptop-code"></i> Manage Time In/Out</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.assign-classes') }}"><i class="fas fa-sitemap"></i> Assign Classes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-cogs me-2"></i>HR Setup</h6></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.departments') }}"><i class="fas fa-building"></i> Manage Departments</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.employment-types') }}"><i class="fas fa-id-card"></i> Manage Employment Types</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.shifts') }}"><i class="fas fa-clock"></i> Manage Shifts</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.standings') }}"><i class="fas fa-medal"></i> Manage Standings</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.custom-fields') }}"><i class="fas fa-list-alt"></i> Employee Form Customization</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.payslip-template') }}"><i class="fas fa-file-invoice"></i> Manage Print Template</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-calendar-check me-2"></i>Attendance</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-hand-pointer"></i> Take Attendance</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye"></i> View/Update Attendance</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-calendar-alt"></i> Monthly Attendance</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.time-in-out') }}"><i class="fas fa-hand-pointer"></i> Take / Update Attendance</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.monthly-attendance-selector') }}"><i class="fas fa-calendar-alt"></i> Monthly Attendance</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.lock-attendance') }}"><i class="fas fa-lock"></i> Lock / Unlock Attendance</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-chart-bar me-2"></i>Attendance Report</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-plus"></i> Combine Attendance Report</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file"></i> Individual Attendance Report</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-file"></i> Employee Attendance Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.combine-attendance-report') }}"><i class="fas fa-plus"></i> Combine Attendance Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.individual-attendance-report') }}"><i class="fas fa-file"></i> Individual Attendance Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.attendance-report') }}"><i class="fas fa-file"></i> Employee Attendance Report</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-calendar-minus me-2"></i>Leave Management</h6></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.leave-request') }}"><i class="fas fa-plus"></i> Request Leave</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.leave-approvals') }}"><i class="fas fa-calendar-check"></i> Leave Approvals</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-dark fw-bold"><i class="fas fa-money-check-alt me-2"></i>Salary &amp; Payroll</h6></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.allowance-types') }}"><i class="fas fa-money-check-alt"></i> Allowances / Deductions Catalog</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.salary-plan-manager') }}"><i class="fas fa-file-invoice-dollar"></i> Create / Update Salary Plan</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.salary-plan-approvals') }}"><i class="fas fa-file-signature"></i> Salary Plan Approvals</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.generate-salary') }}"><i class="fas fa-calculator"></i> Generate Monthly Salary</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.pay-salary') }}"><i class="fas fa-hand-holding-usd"></i> Pay / Print Salary</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.salary-report') }}"><i class="fas fa-file-invoice-dollar"></i> Employee Salary Report</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.salary-advance-request') }}"><i class="fas fa-hand-holding-usd"></i> Request Salary Advance</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hrm.salary-advance-approvals') }}"><i class="fas fa-check-double"></i> Salary Advance Approvals</a></li>
+                        </ul>
+                    </li>
+                    @endif
+
+                    <!-- GENERAL & HOUSE MANAGEMENT -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="generalDrop" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-school me-1 text-warning"></i> General
+                        </a>
+                        <ul class="dropdown-menu shadow-lg">
+                            <li><a class="dropdown-item" href="{{ route('general.notices') }}"><i class="fas fa-bullhorn"></i> Notice Board</a></li>
+                            <li><a class="dropdown-item" href="{{ route('general.houses') }}"><i class="fas fa-shield-alt"></i> Manage Houses</a></li>
+                            <li><a class="dropdown-item" href="{{ route('general.student-diary') }}"><i class="fas fa-book"></i> Student Diary</a></li>
+                            <li><a class="dropdown-item" href="{{ route('general.complaints') }}"><i class="fas fa-exclamation-circle"></i> Complaints</a></li>
+                            <li><a class="dropdown-item" href="{{ route('general.ptm-schedule') }}"><i class="fas fa-users-cog"></i> Parent-Teacher Meetings</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -291,7 +352,7 @@
 
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-uppercase text-muted">Policies</h6></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-percent text-info"></i> Discount Types</a></li>
+                            <li><a class="dropdown-item" href="/discount-types"><i class="fas fa-percent text-info"></i> Discount Types</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-ban text-info"></i> Late Fee Fine Policy</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-star text-info"></i> Student Attendance Fine</a></li>
                         </ul>
@@ -337,6 +398,11 @@
                             </li>
                             <li><a class="dropdown-item rounded-3" href="#"><i class="fas fa-user-edit"></i> My Profile</a></li>
                             <li><a class="dropdown-item rounded-3" href="#"><i class="fas fa-key"></i> Change Password</a></li>
+                            @if(auth()->user()->isSuperAdmin() && !auth()->user()->tenant_id)
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item rounded-3" href="{{ route('platform.tenants') }}"><i class="fas fa-building text-primary"></i> Platform Admin</a></li>
+                                <li><a class="dropdown-item rounded-3" href="{{ route('select-tenant') }}"><i class="fas fa-exchange-alt text-primary"></i> Switch Institution</a></li>
+                            @endif
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">

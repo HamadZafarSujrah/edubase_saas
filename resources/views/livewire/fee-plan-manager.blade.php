@@ -4,7 +4,20 @@
             <h5 class="mb-0 fw-bold">Manage Fee Plan List</h5>
         </div>
         <div class="card-body p-4">
-            
+
+            @if (session()->has('message'))
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm">
+                    {{ session('message') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if (session()->has('error'))
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <div class="row justify-content-center mb-5">
                 <div class="col-md-10">
                     <div class="p-4 bg-light rounded-4 border shadow-sm">
@@ -12,6 +25,7 @@
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold">Fee Plan Name</label>
                                 <input type="text" wire:model="plan_name" class="form-control" placeholder="e.g. Matric Fee Plan">
+                                @error('plan_name') <span class="text-danger tiny fw-bold">{{ $message }}</span> @enderror
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Description</label>
@@ -49,7 +63,7 @@
                                 <td class="small text-muted">{{ $p->created_at->format('Y-m-d') }}</td>
                                 <td class="text-end pe-3">
                                     <button wire:click="edit({{ $p->id }})" class="btn btn-outline-primary btn-sm rounded-circle"><i class="fas fa-edit"></i></button>
-                                    <button wire:click="delete({{ $p->id }})" class="btn btn-outline-danger btn-sm rounded-circle ms-1"><i class="fas fa-trash"></i></button>
+                                    <button onclick="confirm('Are you sure?') || event.stopImmediatePropagation()" wire:click="delete({{ $p->id }})" class="btn btn-outline-danger btn-sm rounded-circle ms-1"><i class="fas fa-trash"></i></button>
                                 </td>
                             </tr>
                         @endforeach

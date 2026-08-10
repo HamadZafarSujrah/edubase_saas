@@ -24,7 +24,7 @@
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3">
             <div class="row g-2 align-items-end">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1">Search Student / Father / SID</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
@@ -51,14 +51,22 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1">Fee Plan Filter</label>
                     <input wire:model.live.debounce.300ms="fee_plan_search" type="text"
                            class="form-control bg-light border-0 shadow-sm"
                            placeholder="Search by fee plan name...">
                 </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted mb-1">Status</label>
+                    <select wire:model.live="status_filter" class="form-select bg-light border-0 shadow-sm">
+                        <option value="active">Active</option>
+                        <option value="inactive">Alumni / Inactive</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
                 <div class="col-md-2 d-flex gap-2">
-                    <button wire:click="$set('search',''); $set('class_id',''); $set('section_id',''); $set('fee_plan_search','')"
+                    <button wire:click="$set('search',''); $set('class_id',''); $set('section_id',''); $set('fee_plan_search',''); $set('status_filter','active')"
                             class="btn btn-outline-secondary w-100 rounded-3">
                         <i class="fas fa-redo me-1"></i> Reset
                     </button>
@@ -130,7 +138,7 @@
                 </thead>
                 <tbody>
                     @forelse($students as $index => $student)
-                        <tr class="{{ $student->feePlanItems()->count() > 0 ? '' : 'table-warning' }}">
+                        <tr class="{{ $student->feePlanItems->count() > 0 ? '' : 'table-warning' }}">
                             <td class="ps-3">
                                 <input type="checkbox" class="form-check-input">
                             </td>
@@ -230,8 +238,8 @@
                 Showing <strong>{{ $students->firstItem() ?? 0 }}</strong>–<strong>{{ $students->lastItem() ?? 0 }}</strong>
                 of <strong>{{ $students->total() }}</strong> students
                 @php
-                    $withPlan = $students->filter(fn($s) => $s->feePlanItems()->count() > 0)->count();
-                    $withoutPlan = $students->filter(fn($s) => $s->feePlanItems()->count() == 0)->count();
+                    $withPlan = $students->filter(fn($s) => $s->feePlanItems->count() > 0)->count();
+                    $withoutPlan = $students->filter(fn($s) => $s->feePlanItems->count() == 0)->count();
                 @endphp
                 &nbsp;|&nbsp;
                 <span class="text-success fw-bold">{{ $withPlan }} with plan</span> &nbsp;|&nbsp;

@@ -11,7 +11,7 @@ class Challan extends Model
     use HasTenant;
 
     protected $fillable = [
-        'tenant_id', 'student_id', 'challan_no', 'month', 'year',
+        'tenant_id', 'student_id', 'challan_no', 'month', 'year', 'installment_no',
         'issue_date', 'due_date', 'total_amount', 'payable_after_due', 'status',
         'paid_amount', 'discount_amount', 'receiving_account_id', 'discount_account_id',
         'paid_date', 'receipt_no', 'challan_notes', 'paid_by',
@@ -19,4 +19,5 @@ class Challan extends Model
 
     public function student() { return $this->belongsTo(Student::class); }
     public function items() { return $this->hasMany(ChallanItem::class); }
+    public function discounts() { return $this->hasMany(ChallanDiscount::class); }
 }

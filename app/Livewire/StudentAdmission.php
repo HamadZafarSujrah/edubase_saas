@@ -16,13 +16,14 @@ use App\Models\Academic\Section;
 use App\Models\Academic\CampusClass;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class StudentAdmission extends Component
 {
     use WithFileUploads, AuthorizesRequests;
 
     // Academic Selection
-    public $session_id, $campus_id, $school_class_id, $section_id, $fee_plan_id;
+    public $session_id, $campus_id, $school_class_id, $section_id, $fee_plan_id, $house_id;
     
     // Student Bio
     public $admission_no, $roll_no, $cnic_no, $first_name, $last_name, $date_of_birth, $place_of_birth, $gender = 'Male';
@@ -51,11 +52,15 @@ class StudentAdmission extends Component
     public $board_reg_no, $board_roll_no, $board_total_marks, $board_obtained_marks;
     
     // Office / Logistics (Enterprise)
-    public $house, $class_of_admission, $group_discipline, $current_status = 'Active';
+    public $class_of_admission;
+    public $is_active = true;
     public $send_branded_sms = true, $send_whatsapp_sms = false, $send_app_notification = true;
 
     // Visitors Info
     public $visitors = [];
+
+    // Documents already on file for this student (edit mode, read-only display)
+    public $existing_documents = [];
 
     // Address & Services
     public $address, $city, $is_transport_required = false, $is_hostel_required = false;
@@ -85,7 +90,7 @@ class StudentAdmission extends Component
         ];
 
         $this->visitors = [
-            ['name' => '', 'phone' => '', 'relation' => '', 'address' => '', 'notes' => '']
+            ['id' => null, 'name' => '', 'phone' => '', 'relation' => '', 'address' => '', 'notes' => '']
         ];
 
         $activeSession = Session::where('is_active', true)->first();
@@ -104,6 +109,7 @@ class StudentAdmission extends Component
                 $this->campus_id       = $s->campus_id;
                 $this->school_class_id = $s->school_class_id;
                 $this->section_id      = $s->section_id;
+                $this->house_id        = $s->house_id;
                 $this->fee_plan_id     = $s->fee_plan_id;
                 // Bio
                 $this->system_id      = $s->system_id;
@@ -151,6 +157,48 @@ class StudentAdmission extends Component
                 $this->is_hostel_required    = $s->is_hostel_required;
                 $this->admission_date        = $s->admission_date?->format('Y-m-d');
                 $this->remarks               = $s->remarks;
+                // Office / logistics
+                $this->class_of_admission  = $s->class_of_admission;
+                $this->is_active           = (bool) $s->is_active;
+                $this->send_branded_sms       = (bool) $s->send_branded_sms;
+                $this->send_whatsapp_sms      = (bool) $s->send_whatsapp_sms;
+                $this->send_app_notification  = (bool) $s->send_app_notification;
+                // Previous education & board
+                $this->prev_degree          = $s->prev_degree;
+                $this->prev_board           = $s->prev_board;
+                $this->prev_roll_no         = $s->prev_roll_no;
+                $this->prev_total_marks     = $s->prev_total_marks;
+                $this->prev_obtained_marks  = $s->prev_obtained_marks;
+                $this->prev_grade           = $s->prev_grade;
+                $this->board_reg_no         = $s->board_reg_no;
+                $this->board_roll_no        = $s->board_roll_no;
+                $this->board_total_marks    = $s->board_total_marks;
+                $this->board_obtained_marks = $s->board_obtained_marks;
+                // Family link -- 'existing' (not the class default 'new') so
+                // save() reuses this student's current family_id (null or not)
+                // instead of creating a brand-new Family record on every edit.
+                $this->family_setup_type  = 'existing';
+                $this->existing_family_id = $s->family_id;
+                $this->family_no          = $s->family?->family_no;
+                // Visitors already on file -- keep their id so save() updates
+                // these rows instead of creating duplicates alongside them.
+                $this->visitors = $s->visitors()->get()->map(fn ($v) => [
+                    'id' => $v->id,
+                    'name' => $v->name,
+                    'phone' => $v->phone,
+                    'relation' => $v->relation,
+                    'address' => $v->address,
+                    'notes' => $v->notes,
+                ])->toArray();
+                if (empty($this->visitors)) {
+                    $this->visitors = [['id' => null, 'name' => '', 'phone' => '', 'relation' => '', 'address' => '', 'notes' => '']];
+                }
+                // Documents already on file -- shown read-only; the "add new
+                // attachment" rows below stay blank for uploading additional ones.
+                $this->existing_documents = $s->documents()->get()->map(fn ($d) => [
+                    'title' => $d->title,
+                    'url'   => Storage::disk('public')->url($d->file_path),
+                ])->toArray();
                 return; // Skip auto-generating new numbers in edit mode
             }
         }
@@ -161,8 +209,12 @@ class StudentAdmission extends Component
 
     public function generateAdmissionNo()
     {
-        $count = Student::count() + 1;
-        $this->admission_no = "ADM-" . date('Y') . "-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+        // MAX(id)+1 rather than COUNT()+1: a hard-deleted student would make
+        // COUNT() regress and suggest an admission_no that's already taken by
+        // a later student. This is only a starting suggestion anyway -- the
+        // tenant-scoped uniqueness rule in save() is the real guard.
+        $next = (int) (Student::max('id') ?? 0) + 1;
+        $this->admission_no = "ADM-" . date('Y') . "-" . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     public function generateFamilyNo()
@@ -221,6 +273,7 @@ class StudentAdmission extends Component
             'fee_plans' => \App\Models\Finance\FeePlan::all(),
             'classes' => $availableClasses,
             'sections' => $availableSections,
+            'houses' => \App\Models\General\House::all(),
         ])->layout('layouts.app');
     }
 
@@ -233,28 +286,48 @@ class StudentAdmission extends Component
             $this->authorize('create', Student::class);
         }
 
-        // When editing, ignore the current student's own admission_no for uniqueness check
-        $admissionNoRule = $this->editing
-            ? 'required|unique:students,admission_no,' . $this->student_id
-            : 'required|unique:students,admission_no';
-
         $this->validate([
             'session_id' => 'required',
             'campus_id' => 'required',
             'school_class_id' => 'required',
             'section_id' => 'nullable',
-            'admission_no' => $admissionNoRule,
+            'admission_no' => [
+                'required',
+                Rule::unique('students', 'admission_no')
+                    ->where('tenant_id', $this->current_tenant_id)
+                    ->ignore($this->student_id),
+            ],
+            'roll_no' => [
+                'nullable',
+                Rule::unique('students', 'roll_no')
+                    ->where('tenant_id', $this->current_tenant_id)
+                    ->where('school_class_id', $this->school_class_id)
+                    ->where('section_id', $this->section_id)
+                    ->ignore($this->student_id),
+            ],
             'first_name' => 'required|string|max:100',
             'father_name' => 'required|string|max:100',
             'admission_date' => 'required|date',
             'student_image' => 'nullable|image|max:1024',
-            'cnic_no' => 'nullable|digits:13',
+            'cnic_no' => [
+                'nullable',
+                'digits:13',
+                Rule::unique('students', 'cnic_no')
+                    ->where('tenant_id', $this->current_tenant_id)
+                    ->ignore($this->student_id),
+            ],
             'father_cnic' => 'nullable|digits:13',
             'mother_cnic' => 'nullable|digits:13',
             'guardian_cnic' => 'nullable|digits:13',
             'father_phone' => 'nullable|digits:11',
             'mother_phone' => 'nullable|digits:11',
             'whatsapp_no' => 'nullable|digits:11',
+            'existing_family_id' => Rule::requiredIf(fn () => $this->family_setup_type === 'existing' && !$this->editing),
+        ], [
+            'admission_no.unique' => 'This admission number is already in use.',
+            'roll_no.unique' => 'This roll number is already used by another student in this class/section.',
+            'cnic_no.unique' => 'A student with this CNIC/B-Form number already exists.',
+            'existing_family_id.required' => 'Please search for and select an existing family, or switch to "New Family".',
         ]);
 
         DB::beginTransaction();
@@ -285,6 +358,7 @@ class StudentAdmission extends Component
                 'campus_id' => $this->campus_id,
                 'school_class_id' => $this->school_class_id,
                 'section_id' => $this->section_id,
+                'house_id' => $this->house_id ?: null,
                 'fee_plan_id' => $this->fee_plan_id,
                 'admission_no' => $this->admission_no,
                 'roll_no' => $this->roll_no,
@@ -337,12 +411,11 @@ class StudentAdmission extends Component
                 'board_roll_no' => $this->board_roll_no,
                 'board_total_marks' => $this->board_total_marks,
                 'board_obtained_marks' => $this->board_obtained_marks,
-                'house' => $this->house,
                 'class_of_admission' => $this->class_of_admission,
                 'send_branded_sms' => $this->send_branded_sms,
                 'send_whatsapp_sms' => $this->send_whatsapp_sms,
                 'send_app_notification' => $this->send_app_notification,
-                'is_active' => true,
+                'is_active' => $this->is_active,
             ];
 
             if ($this->editing && $this->student_id) {
@@ -350,12 +423,20 @@ class StudentAdmission extends Component
                 $student->update($studentData);
             } else {
                 $tenant = \App\Models\Tenant::find($this->current_tenant_id);
+
+                if ($tenant->wouldExceedPlanLimit('students', Student::count())) {
+                    DB::rollBack();
+                    $this->addError('admission_no', 'Your institution\'s plan student limit has been reached. Please upgrade your plan to admit more students.');
+                    return;
+                }
+
                 $prefix = $tenant->student_prefix ?? 'STD-';
                 $number = $tenant->next_student_number ?? 1;
-                
+
                 $studentData['tenant_id'] = $this->current_tenant_id;
                 $studentData['system_id'] = $prefix . $number;
-                
+                $studentData['created_by'] = auth()->id();
+
                 $student = Student::create($studentData);
                 
                 // Increment for next student
@@ -366,13 +447,28 @@ class StudentAdmission extends Component
             // The fee_plan_id is still saved to the Student model above, but the actual calculation lines
             // will not be automatically generated here. They must be generated from the 'Create Fee Plans' menu.
 
-            // 4. Save Visitors
+            // 4. Save Visitors -- update rows already on file (identified by the
+            // id loaded in edit mode) instead of blindly re-creating them, which
+            // would otherwise duplicate every existing visitor on every save.
             foreach ($this->visitors as $visitor) {
-                if ($visitor['name']) {
-                    StudentVisitor::create(array_merge($visitor, [
-                        'tenant_id' => $this->current_tenant_id,
-                        'student_id' => $student->id
-                    ]));
+                if (!$visitor['name']) {
+                    continue;
+                }
+                $visitorData = [
+                    'tenant_id' => $this->current_tenant_id,
+                    'student_id' => $student->id,
+                    'name' => $visitor['name'],
+                    'phone' => $visitor['phone'],
+                    'relation' => $visitor['relation'],
+                    'address' => $visitor['address'],
+                    'notes' => $visitor['notes'],
+                ];
+                if (!empty($visitor['id'])) {
+                    StudentVisitor::where('id', $visitor['id'])
+                        ->where('student_id', $student->id)
+                        ->update($visitorData);
+                } else {
+                    StudentVisitor::create($visitorData);
                 }
             }
 
@@ -424,7 +520,7 @@ class StudentAdmission extends Component
         $this->attachment_rows = array_values($this->attachment_rows); 
     }
 
-    public function addVisitor() { $this->visitors[] = ['name' => '', 'phone' => '', 'relation' => '', 'address' => '', 'notes' => '']; }
+    public function addVisitor() { $this->visitors[] = ['id' => null, 'name' => '', 'phone' => '', 'relation' => '', 'address' => '', 'notes' => '']; }
     public function removeVisitor($index) { 
         unset($this->visitors[$index]); 
         $this->visitors = array_values($this->visitors); 

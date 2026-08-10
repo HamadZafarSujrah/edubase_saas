@@ -38,7 +38,7 @@
     <div class="card shadow-sm border-0 rounded-4 mb-4">
         <div class="card-body p-4">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small fw-bold">Search Student</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
@@ -52,7 +52,7 @@
                         @foreach($campuses as $c) <option value="{{ $c->id }}">{{ $c->name }}</option> @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-bold">Class</label>
                     <select wire:model.live="school_class_id" class="form-select bg-light border-0" {{ !$campus_id ? 'disabled' : '' }}>
                         <option value="">All Classes</option>
@@ -64,6 +64,14 @@
                     <select wire:model.live="section_id" class="form-select bg-light border-0" {{ !$school_class_id ? 'disabled' : '' }}>
                         <option value="">All Sections</option>
                         @foreach($sections as $sec) <option value="{{ $sec->id }}">{{ $sec->name }}</option> @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="small fw-bold form-label">Status</label>
+                    <select wire:model.live="status_filter" class="form-select bg-light border-0">
+                        <option value="active">Active</option>
+                        <option value="inactive">Alumni / Inactive</option>
+                        <option value="all">All</option>
                     </select>
                 </div>
                 <div class="col-md-1 d-flex align-items-end">

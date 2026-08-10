@@ -109,9 +109,11 @@ class StudentFeePlanEditor extends Component
 
     protected function loadFromExistingItems($items)
     {
+        $months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
         $this->line_items = [];
         foreach ($items as $item) {
-            $this->line_items[] = [
+            $line = [
                 'item_id'           => $item->id,
                 'particular_id'     => $item->fee_particular_id,
                 'name'              => $item->particular->name ?? 'Unknown',
@@ -121,6 +123,10 @@ class StudentFeePlanEditor extends Component
                 'discount'          => $item->discount_amount ?? 0,
                 'fee_after_discount'=> ($item->actual_amount - ($item->discount_amount ?? 0)),
             ];
+            foreach ($months as $m) {
+                $line[$m] = (bool) $item->$m;
+            }
+            $this->line_items[] = $line;
         }
 
         // Hydrate the global discount inputs from the first item since they are saved homogeneously
@@ -138,8 +144,11 @@ class StudentFeePlanEditor extends Component
 
     protected function loadFromMasterPlan($feePlanId, $student)
     {
+        $months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
         $particulars = FeePlanParticular::with('particular')
             ->where('fee_plan_id', $feePlanId)
+            ->where('is_mapped', true)
             ->get();
 
         $this->line_items = [];
@@ -147,7 +156,7 @@ class StudentFeePlanEditor extends Component
             $actualFee = $mp->amount;
             $discount  = 0;
 
-            $this->line_items[] = [
+            $line = [
                 'item_id'           => null, // Not saved yet
                 'particular_id'     => $mp->fee_particular_id,
                 'name'              => $mp->particular->name ?? 'Unknown',
@@ -157,6 +166,13 @@ class StudentFeePlanEditor extends Component
                 'discount'          => $discount,
                 'fee_after_discount'=> round($actualFee - $discount, 0),
             ];
+            // Copy the master plan's repeat-month schedule -- these can still
+            // be overridden per-student, but must start from the plan's own
+            // schedule instead of silently defaulting to "never billed".
+            foreach ($months as $m) {
+                $line[$m] = (bool) $mp->$m;
+            }
+            $this->line_items[] = $line;
         }
     }
 
@@ -176,21 +192,41 @@ class StudentFeePlanEditor extends Component
     {
         if (!$value) return;
 
+        // Only reload the in-memory line items to preview the new plan's
+        // amounts -- do NOT persist fee_plan_id here. Previewing a different
+        // template must not take effect until Save is actually clicked; the
+        // student's fee_plan_id is written in save() alongside the rest of
+        // the plan data, in the same transaction as the line items.
         $student = Student::findOrFail($this->student_id);
-        $student->update(['fee_plan_id' => $value]);
-        $this->selected_fee_plan_id = $value;
-
-        // Reload line items from new master plan
         $this->loadFromMasterPlan($value, $student);
-        session()->flash('message', 'Fee plan template switched. Review and save the amounts below.');
+        session()->flash('message', 'Previewing the selected template\'s amounts below -- click Save to apply this change.');
     }
 
     public function save()
     {
+        // Re-verify authorization independently of $mode: $mode is a plain
+        // public Livewire property, and Livewire applies client-sent property
+        // updates before invoking an action, so a tampered request could set
+        // mode away from 'view' and reach this method regardless of what
+        // mount() decided. userCanEdit() re-derives from the authenticated
+        // user and cannot be spoofed the same way.
+        if (!$this->userCanEdit()) {
+            abort(403, 'You are not authorized to edit fee plans.');
+        }
+
         $this->validate([
             'student_id'       => 'required|exists:students,id',
             'line_items'       => 'required|array|min:1',
+            'line_items.*.actual_fee' => 'required|numeric|min:0',
+            'line_items.*.discount'   => 'nullable|numeric|min:0',
         ]);
+
+        foreach ($this->line_items as $i => $item) {
+            if ((float) ($item['discount'] ?? 0) > (float) ($item['actual_fee'] ?? 0)) {
+                $this->addError("line_items.$i.discount", 'Discount cannot exceed the actual fee for this particular.');
+                return;
+            }
+        }
 
         if ($this->mode === 'view') {
             // View‑only – do not persist any changes
@@ -198,12 +234,17 @@ class StudentFeePlanEditor extends Component
             return redirect()->route('finance.view-edit-fee-plans');
         }
 
-        DB::transaction(function () {
+        $months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+        DB::transaction(function () use ($months) {
             $tenantId = $this->current_tenant_id;
             $student  = Student::findOrFail($this->student_id);
 
-            // Save fee plan metadata to student
+            // Save fee plan metadata to student -- fee_plan_id is written here,
+            // not in updatedSelectedFeePlanId(), so switching templates only
+            // takes effect together with the rest of the plan, on Save.
             $student->update([
+                'fee_plan_id'            => $this->selected_fee_plan_id ?: $student->fee_plan_id,
                 'fee_plan_effect_from'   => $this->with_effect_from,
                 'fee_plan_increment'     => $this->percentage_increment ?: null,
                 'fee_plan_year'          => $this->fee_plan_year,
@@ -228,10 +269,17 @@ class StudentFeePlanEditor extends Component
                     'discount_amount'  => $item['discount'],
                     'discount_reason'  => $this->discount_type !== 'NO DISCOUNT' ? $this->discount_type . ($this->notes ? ': ' . $this->notes : '') : null,
                 ];
+                foreach ($months as $m) {
+                    $data[$m] = (bool) ($item[$m] ?? false);
+                }
 
                 if (!empty($item['item_id'])) {
-                    // Update existing
-                    StudentFeePlanItem::where('id', $item['item_id'])->update($data);
+                    // Update existing -- scoped to this student/tenant so a
+                    // tampered item_id can never reassign another student's row.
+                    StudentFeePlanItem::where('id', $item['item_id'])
+                        ->where('student_id', $this->student_id)
+                        ->where('tenant_id', $tenantId)
+                        ->update($data);
                 } else {
                     // Create new
                     StudentFeePlanItem::create($data);

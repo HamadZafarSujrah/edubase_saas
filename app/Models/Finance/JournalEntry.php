@@ -5,19 +5,25 @@ namespace App\Models\Finance;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasTenant;
 use App\Models\Campus\Campus;
+use App\Models\User;
 
 class JournalEntry extends Model
 {
     use HasTenant;
 
     protected $fillable = [
-        'tenant_id', 'campus_id', 'transaction_date', 'voucher_no', 
+        'tenant_id', 'campus_id', 'transaction_date', 'voucher_no',
         'reference', 'narration', 'created_by'
     ];
 
     public function campus()
     {
         return $this->belongsTo(Campus::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()

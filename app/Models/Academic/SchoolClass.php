@@ -16,6 +16,7 @@ class SchoolClass extends Model
         'tenant_id',
         'name',
         'numeric_value',
+        'class_shift_id',
         'is_active',
     ];
 
@@ -50,6 +51,27 @@ class SchoolClass extends Model
     public function students()
     {
         return $this->hasMany(\App\Models\Student\Student::class, 'school_class_id');
+    }
+
+    /**
+     * Subjects assigned to this class, with per-class max marks (pivot).
+     */
+    public function classSubjects()
+    {
+        return $this->hasMany(ClassSubject::class);
+    }
+
+    /**
+     * Exams scheduled for this class.
+     */
+    public function exams()
+    {
+        return $this->hasMany(\App\Models\Exam\Exam::class);
+    }
+
+    public function classShift()
+    {
+        return $this->belongsTo(ClassShift::class);
     }
 
     // ─────────────────────────────────────────────

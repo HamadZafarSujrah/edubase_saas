@@ -18,7 +18,7 @@ class GLAccountGroups extends Component
     public $search_inactive = '';
 
     public $name;
-    public $account_class = 'Assets';
+    public $account_class = 'asset';
     public $is_inactive = 0;
     public $editing_id = null;
 

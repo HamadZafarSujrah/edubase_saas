@@ -54,6 +54,18 @@
                     </select>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Student Status</label>
+                    <select wire:model.live="status_filter" class="form-select bg-light border-0 shadow-sm">
+                        <option value="active">Active</option>
+                        <option value="inactive">Alumni / Inactive</option>
+                        <option value="all">All</option>
+                    </select>
+                    @if($status_filter !== 'active')
+                        <div class="text-warning small mt-1"><i class="fas fa-exclamation-triangle me-1"></i>Billing non-active students — for outstanding dues on alumni/transferred students.</div>
+                    @endif
+                </div>
+
                 <hr class="my-4">
 
                 <div class="row g-2 mb-4">
